@@ -1,0 +1,11 @@
+flask
+requests
+feedparser
+instaloader
+praw
+google-auth
+google-auth-oauthlib
+google-api-python-client
+plaid-python
+gunicorn
+python-dotenv
