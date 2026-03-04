@@ -3,7 +3,7 @@ from flask import (Flask, render_template, request, redirect,
 import instaloader
 from datetime import datetime
 import requests
-import os, json, time, queue, threading, hashlib, secrets, sqlite3
+import os, json, time, queue, threading, hashlib, secrets, sqlite3, signal
 import feedparser
 import praw
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -327,10 +327,14 @@ def get_youtube_subscriptions(creds):
 
 def get_instagram_followers(username):
     try:
+        signal.signal(signal.SIGALRM, lambda s,f: (_ for _ in ()).throw(Exception('timeout')))
+        signal.alarm(5)
         L = instaloader.Instaloader()
         p = instaloader.Profile.from_username(L.context, username)
+        signal.alarm(0)
         return {'username':username,'followers':p.followers,'following':p.followees,'posts':p.mediacount}
     except Exception as e:
+        signal.alarm(0)
         return {'error':str(e)}
 
 def get_weather(city='Charlotte'):
@@ -398,6 +402,8 @@ def get_youtube_videos(channel_ids):
 
 def get_instagram_posts(username):
     try:
+        signal.signal(signal.SIGALRM, lambda s,f: (_ for _ in ()).throw(Exception('timeout')))
+        signal.alarm(5)
         L = instaloader.Instaloader()
         profile = instaloader.Profile.from_username(L.context, username)
         posts = []
@@ -408,8 +414,11 @@ def get_instagram_posts(username):
                           'url':f"https://www.instagram.com/p/{post.shortcode}/",
                           'published':post.date_utc.isoformat(),
                           'time_ago':get_time_ago(post.date_utc.isoformat())})
+        signal.alarm(0)
         return posts
-    except: return []
+    except:
+        signal.alarm(0)
+        return []
 
 def get_unified_feed(channel_ids, username, subreddits=['popular','news','technology']):
     posts = (get_youtube_videos(channel_ids)+get_instagram_posts(username)
