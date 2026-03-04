@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Settings - My Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe4c4 100%);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: linear-gradient(145deg, #ffffff, #fff0e0);
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 
+                12px 12px 24px rgba(255, 140, 66, 0.15),
+                -12px -12px 24px rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 140, 66, 0.1);
+        }
+
+        h1 {
+            color: #ff8c42;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            color: #ff8c42;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        input[type="text"],
+        input[type="color"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 140, 66, 0.2);
+            border-radius: 15px;
+            font-size: 1em;
+            background: rgba(255, 140, 66, 0.05);
+            box-sizing: border-box;
+        }
+
+        input[type="color"] {
+            height: 60px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-btn {
+            background: linear-gradient(145deg, #ff8c42, #ff6b35);
+            color: white;
+            box-shadow: 5px 5px 10px rgba(255, 140, 66, 0.3);
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 7px 7px 15px rgba(255, 140, 66, 0.4);
+        }
+
+        .cancel-btn {
+            background: linear-gradient(145deg, #e0e0e0, #c0c0c0);
+            color: #333;
+            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .cancel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 7px 7px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-preview {
+            margin-top: 10px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .bg-preview {
+            margin-top: 10px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: bold;
+            border: 2px solid #ccc;
+        }
+
+        .hint {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Dashboard Settings</h1>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="city">📍 Your Location (City)</label>
+                <input type="text" id="city" name="city" value="{{ city }}" placeholder="e.g., Charlotte, New York, Los Angeles">
+                <p class="hint">Enter your city name for weather updates</p>
+            </div>
+
+            <div class="form-group">
+                <label for="youtube_channel">📺 YouTube Channel ID</label>
+                <input type="text" id="youtube_channel" name="youtube_channel" value="{{ youtube_channel }}" placeholder="e.g., UCX6OQ3DkcsbYNE6H8uQQuVA">
+                <p class="hint">Enter a YouTube channel ID to track (default is MrBeast)</p>
+            </div>
+
+            <div class="form-group">
+                <label for="theme_color">🎨 Accent Color (Bubbles & Text)</label>
+                <input type="color" id="theme_color" name="theme_color" value="{{ theme_color }}">
+                <div class="color-preview" id="theme_preview" style="background-color: {{ theme_color }};">
+                    Accent Color Preview
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="bg_color">🖌️ Background Color</label>
+                <input type="color" id="bg_color" name="bg_color" value="{{ bg_color }}">
+                <div class="bg-preview" id="bg_preview" style="background-color: {{ bg_color }}; color: #333;">
+                    Background Color Preview
+                </div>
+                <p class="hint">Choose a light color for best readability</p>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="cancel-btn" onclick="window.location.href='/'">Cancel</button>
+                <button type="submit" class="save-btn">Save Settings</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Update previews when colors change
+        document.getElementById('theme_color').addEventListener('input', function(e) {
+            document.getElementById('theme_preview').style.backgroundColor = e.target.value;
+        });
+
+        document.getElementById('bg_color').addEventListener('input', function(e) {
+            document.getElementById('bg_preview').style.backgroundColor = e.target.value;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account – My Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse at 30% 20%, rgba(255,140,66,0.12) 0%, transparent 60%),
+                        radial-gradient(ellipse at 70% 80%, rgba(255,68,0,0.08) 0%, transparent 50%),
+                        #f7f0e8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-card {
+            background: #fff;
+            border-radius: 28px;
+            padding: 48px 44px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 20px 20px 60px rgba(255,140,66,0.12),
+                        -10px -10px 40px rgba(255,255,255,0.9),
+                        0 0 0 1px rgba(255,140,66,0.08);
+        }
+        .auth-logo { text-align: center; margin-bottom: 28px; }
+        .auth-logo-title {
+            font-size: 2rem; font-weight: 800;
+            background: linear-gradient(135deg,#ff8c42,#ff4400);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; letter-spacing: -0.02em;
+        }
+        .auth-logo-sub { font-size: 0.82rem; color: #999; margin-top: 4px; }
+        h2 { font-size: 1.4rem; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+        .auth-desc { font-size: 0.85rem; color: #888; margin-bottom: 24px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; color: #555;
+                margin-bottom: 6px; letter-spacing: 0.02em; }
+        input[type="text"], input[type="email"], input[type="password"] {
+            width: 100%; padding: 12px 16px;
+            border: 2px solid #e8e0d8; border-radius: 12px;
+            font-size: 0.93rem; font-family: 'Inter', sans-serif;
+            color: #222; background: #fdf9f5;
+            transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        }
+        input:focus {
+            border-color: #ff8c42;
+            box-shadow: 0 0 0 3px rgba(255,140,66,0.12);
+            background: #fff;
+        }
+        .hint { font-size: 0.73rem; color: #aaa; margin-top: 4px; }
+        .error-box {
+            background: rgba(255,60,60,0.07); border: 1px solid rgba(255,60,60,0.2);
+            border-radius: 10px; padding: 12px 16px;
+            font-size: 0.83rem; color: #cc2222;
+            margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-primary {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg,#ff8c42,#ff4400);
+            color: white; border: none; border-radius: 12px;
+            font-size: 0.95rem; font-weight: 700; font-family: 'Inter',sans-serif;
+            cursor: pointer; letter-spacing: 0.02em;
+            transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 16px rgba(255,100,0,0.3); margin-top: 4px;
+        }
+        .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(255,100,0,0.38); }
+        .auth-footer { text-align: center; margin-top: 22px; font-size: 0.85rem; color: #888; }
+        .auth-footer a { color: #ff8c42; text-decoration: none; font-weight: 600; }
+        .auth-footer a:hover { text-decoration: underline; }
+        .password-strength { height: 4px; border-radius: 2px; margin-top: 6px; background: #eee; overflow: hidden; }
+        .password-strength-fill { height: 100%; width: 0; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="auth-logo-title">✨ My Dashboard</div>
+            <div class="auth-logo-sub">Create your account</div>
+        </div>
+
+        <h2>Join the dashboard</h2>
+        <p class="auth-desc">Set up your account to get started</p>
+
+        {% if error %}
+        <div class="error-box">⚠️ {{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/register">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="username">Username *</label>
+                    <input type="text" id="username" name="username"
+                           placeholder="cooluser" maxlength="30"
+                           autocomplete="username" required>
+                    <div class="hint">3–30 chars, no spaces</div>
+                </div>
+                <div class="form-group">
+                    <label for="display_name">Display Name</label>
+                    <input type="text" id="display_name" name="display_name"
+                           placeholder="Your Name" maxlength="40">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email"
+                       placeholder="you@example.com"
+                       autocomplete="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password" id="password" name="password"
+                       placeholder="Min. 8 characters"
+                       autocomplete="new-password" required
+                       oninput="checkStrength(this.value)">
+                <div class="password-strength">
+                    <div class="password-strength-fill" id="pw-fill"></div>
+                </div>
+                <div class="hint" id="pw-hint">Use 8+ characters with numbers and symbols</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password2">Confirm Password *</label>
+                <input type="password" id="password2" name="password2"
+                       placeholder="Repeat password"
+                       autocomplete="new-password" required>
+            </div>
+
+            <button type="submit" class="btn-primary">Create Account →</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="/login">Sign in</a>
+        </div>
+    </div>
+
+    <script>
+        function checkStrength(pw) {
+            const fill = document.getElementById('pw-fill');
+            const hint = document.getElementById('pw-hint');
+            let score = 0;
+            if (pw.length >= 8)  score++;
+            if (pw.length >= 12) score++;
+            if (/[0-9]/.test(pw))      score++;
+            if (/[^a-zA-Z0-9]/.test(pw)) score++;
+            const colors = ['','#ff4444','#ff8844','#ffcc00','#22cc55'];
+            const labels = ['','Weak','Fair','Good','Strong 💪'];
+            const widths  = ['0%','25%','50%','75%','100%'];
+            fill.style.width      = widths[score]  || '0%';
+            fill.style.background = colors[score]  || 'transparent';
+            hint.textContent      = score > 0 ? labels[score] : 'Use 8+ characters with numbers and symbols';
+        }
+    </script>
+</body>
+</html>

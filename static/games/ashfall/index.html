@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASHFALL – Pixel Battle Royale</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ══════════════════════════════════════════════
+       ASHFALL – Post-Apocalyptic Battle Royale
+       Run locally: open index.html in any modern browser.
+       No build step required.
+  ══════════════════════════════════════════════ -->
+
+  <!-- SCREENS -->
+  <div id="title-screen" class="screen active">
+    <div class="title-glow">ASHFALL</div>
+    <div class="subtitle">Last Survivor Wins</div>
+    <div class="lore">Civilization fell. Lava swallowed the oceans.<br>Only the ruthless remain.</div>
+    <div class="menu-btns">
+      <button id="btn-start">▶ ENTER THE ZONE</button>
+      <button id="btn-howto">? HOW TO PLAY</button>
+    </div>
+    <div id="howto" class="howto hidden">
+      <b>WASD / Arrow Keys</b> – Move &amp; Jump<br>
+      <b>Mouse</b> – Aim<br>
+      <b>Left Click / Space</b> – Attack / Shoot<br>
+      <b>R</b> – Reload&nbsp;&nbsp; <b>E</b> – Pick up item<br>
+      <b>1-5</b> – Switch weapon slot<br>
+      Avoid lava. Avoid the shrinking zone. Kill everything else.
+    </div>
+  </div>
+
+  <div id="game-screen" class="screen">
+    <canvas id="gameCanvas"></canvas>
+    <!-- HUD -->
+    <div id="hud">
+      <div id="hud-left">
+        <div class="hud-label">HP</div>
+        <div id="hp-bar-wrap"><div id="hp-bar"></div></div>
+        <div class="hud-label" style="margin-top:4px">ARMOR</div>
+        <div id="armor-bar-wrap"><div id="armor-bar"></div></div>
+      </div>
+      <div id="hud-center">
+        <div id="zone-timer">ZONE SAFE</div>
+        <div id="kill-feed"></div>
+      </div>
+      <div id="hud-right">
+        <div id="weapon-name">KNIFE</div>
+        <div id="ammo-display">∞</div>
+        <div id="minimap-wrap">
+          <canvas id="minimap"></canvas>
+        </div>
+        <div id="alive-count">⚔ <span id="alive-num">8</span> ALIVE</div>
+      </div>
+    </div>
+    <!-- Inventory bar -->
+    <div id="inv-bar">
+      <div class="inv-slot active" data-slot="0">1<span class="inv-icon">🔪</span></div>
+      <div class="inv-slot" data-slot="1">2<span class="inv-icon">—</span></div>
+      <div class="inv-slot" data-slot="2">3<span class="inv-icon">—</span></div>
+      <div class="inv-slot" data-slot="3">4<span class="inv-icon">—</span></div>
+      <div class="inv-slot" data-slot="4">5<span class="inv-icon">—</span></div>
+    </div>
+    <div id="pickup-prompt" class="hidden">Press <b>E</b> to pick up</div>
+  </div>
+
+  <div id="gameover-screen" class="screen">
+    <div id="go-title">YOU DIED</div>
+    <div id="go-rank"></div>
+    <div id="go-stats"></div>
+    <button id="btn-restart">↺ PLAY AGAIN</button>
+  </div>
+
+  <div id="win-screen" class="screen">
+    <div id="win-title">VICTORY!</div>
+    <div class="subtitle">Last Survivor</div>
+    <div id="win-stats"></div>
+    <button id="btn-restart2">↺ PLAY AGAIN</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

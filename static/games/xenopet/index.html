@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#050510">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="XENOPET">
+<title>XENOPET — Alien Pet Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & TOKENS ===== */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#050510;
+  --surface:#0b0b1f;
+  --surface2:#111128;
+  --border:#1c1c3a;
+  --border2:#252550;
+  --cyan:#00f5d4;
+  --pink:#ff2fff;
+  --yellow:#ffe94a;
+  --orange:#ff8c42;
+  --red:#ff3b5c;
+  --green:#3bffaa;
+  --blue:#3bc4ff;
+  --purple:#b06aff;
+  --dim:#44446a;
+  --text:#cccce8;
+  --px:'Press Start 2P',monospace;
+  --vt:'VT323',monospace;
+}
+
+html,body{height:100%;overflow:hidden;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--px);
+  font-size:10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  overflow:hidden;
+}
+
+/* scanlines */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.09) 3px,rgba(0,0,0,.09) 4px);
+}
+
+/* ===== SELECTION SCREEN ===== */
+#selectionScreen{
+  width:100%;max-width:860px;
+  padding:16px 14px 20px;
+  overflow-y:auto;
+  height:100vh;
+}
+
+.sel-logo{
+  text-align:center;padding:16px 0 6px;
+  font-size:clamp(14px,4vw,26px);letter-spacing:5px;
+  color:var(--cyan);
+  text-shadow:0 0 18px var(--cyan),0 0 50px rgba(0,245,212,.3);
+  animation:glow 3s ease-in-out infinite;
+}
+.sel-logo span{color:var(--pink);text-shadow:0 0 18px var(--pink);}
+@keyframes glow{0%,100%{opacity:1;}50%{opacity:.85;}}
+.sel-sub{text-align:center;font-family:var(--vt);font-size:16px;color:var(--dim);letter-spacing:5px;margin-bottom:20px;}
+
+.sel-prompt{text-align:center;font-size:7px;color:var(--yellow);letter-spacing:3px;margin-bottom:16px;}
+
+.species-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:10px;margin-bottom:18px;
+}
+@media(max-width:700px){.species-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:440px){.species-grid{grid-template-columns:repeat(2,1fr) ;gap:8px;}}
+
+.sp-card{
+  background:var(--surface);
+  border:2px solid var(--border2);
+  padding:12px 8px 10px;
+  cursor:pointer;transition:all .18s;
+  text-align:center;position:relative;
+  user-select:none;
+}
+.sp-card:hover{border-color:var(--cyan);transform:translateY(-3px);box-shadow:0 6px 24px rgba(0,245,212,.12);}
+.sp-card.picked{border-color:var(--pink)!important;box-shadow:0 0 20px rgba(255,47,255,.25)!important;}
+.sp-card.picked::after{
+  content:'✓';position:absolute;top:5px;right:7px;
+  font-size:8px;color:var(--pink);
+}
+.sp-canvas{display:block;margin:0 auto 8px;image-rendering:pixelated;}
+.sp-name{font-size:6px;color:var(--cyan);margin-bottom:3px;letter-spacing:1px;}
+.sp-planet{font-family:var(--vt);font-size:12px;color:var(--dim);margin-bottom:5px;}
+.sp-trait{
+  font-family:var(--vt);font-size:11px;color:var(--pink);
+  background:rgba(255,47,255,.1);border:1px solid rgba(255,47,255,.25);
+  padding:1px 5px;display:inline-block;margin-bottom:7px;
+}
+.sp-desc{font-family:var(--vt);font-size:11px;color:var(--dim);line-height:1.4;}
+
+.sel-btn{
+  display:block;margin:0 auto;
+  background:var(--cyan);color:#000;
+  border:none;font-family:var(--px);font-size:8px;
+  padding:13px 36px;cursor:pointer;transition:all .18s;letter-spacing:2px;
+}
+.sel-btn:disabled{background:var(--border2);color:var(--dim);cursor:not-allowed;}
+.sel-btn:not(:disabled):hover{background:var(--pink);color:#fff;box-shadow:0 0 28px rgba(255,47,255,.45);}
+
+/* ===== GAME SCREEN ===== */
+#gameScreen{
+  display:none;
+  width:100%;max-width:860px;
+  height:100vh;
+  flex-direction:column;
+  overflow:hidden;
+}
+#gameScreen.active{display:flex;}
+
+/* Top bar */
+.topbar{
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+  padding:8px 12px 7px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+.tb-name{font-size:7px;color:var(--cyan);letter-spacing:2px;}
+.tb-stage{
+  font-family:var(--vt);font-size:15px;
+  background:rgba(255,233,74,.1);border:1px solid rgba(255,233,74,.25);
+  color:var(--yellow);padding:1px 7px;
+}
+.tb-time{font-family:var(--vt);font-size:16px;color:var(--dim);margin-left:auto;}
+.tb-reset{
+  background:none;border:1px solid var(--border2);color:var(--dim);
+  font-family:var(--px);font-size:5px;padding:5px 8px;cursor:pointer;
+  transition:all .15s;flex-shrink:0;
+}
+.tb-reset:hover{border-color:var(--red);color:var(--red);}
+
+/* ---- DEAD overlay ---- */
+#deadOverlay{
+  display:none;position:fixed;inset:0;z-index:8000;
+  background:rgba(0,0,0,.92);
+  flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:24px;
+}
+#deadOverlay.show{display:flex;}
+.dead-skull{font-size:72px;margin-bottom:16px;animation:deadPulse 2s ease-in-out infinite;}
+@keyframes deadPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+.dead-title{font-size:14px;color:var(--red);margin-bottom:10px;letter-spacing:3px;text-shadow:0 0 30px var(--red);}
+.dead-msg{font-family:var(--vt);font-size:20px;color:var(--text);margin-bottom:24px;line-height:1.6;max-width:340px;}
+.dead-btn{
+  background:var(--red);color:#fff;border:none;
+  font-family:var(--px);font-size:8px;padding:12px 28px;cursor:pointer;
+  transition:all .18s;letter-spacing:2px;
+}
+.dead-btn:hover{box-shadow:0 0 28px rgba(255,59,92,.5);}
+
+/* ---- Main content area ---- */
+.game-body{
+  flex:1;overflow:hidden;
+  display:grid;
+  grid-template-columns:1fr 220px;
+  gap:0;
+}
+@media(max-width:600px){
+  .game-body{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+}
+
+/* ---- Habitat ---- */
+.habitat-col{
+  display:flex;flex-direction:column;
+  overflow:hidden;border-right:1px solid var(--border);
+}
+.habitat-wrap{
+  flex:1;min-height:0;
+  position:relative;
+  background:var(--surface);
+}
+#habitatCanvas{
+  display:block;
+  width:100%;height:100%;
+  image-rendering:pixelated;
+}
+
+/* speech bubble */
+.speech-bubble{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  background:var(--surface2);
+  border:2px solid var(--cyan);
+  padding:8px 12px;
+  font-family:var(--vt);font-size:18px;
+  color:var(--text);
+  max-width:90%;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  pointer-events:none;
+  transition:opacity .3s;
+}
+.speech-bubble::after{
+  content:'▶';position:absolute;bottom:5px;right:7px;
+  font-size:8px;color:var(--cyan);animation:blink 1s step-end infinite;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* ---- Actions panel ---- */
+.actions-col{
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  background:var(--surface);
+}
+@media(max-width:600px){
+  .actions-col{overflow-y:visible;}
+  .habitat-col{min-height:220px;}
+}
+
+.acts-title{
+  font-size:5px;color:var(--dim);letter-spacing:4px;
+  padding:10px 12px 6px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+
+.action-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 12px;
+  border:none;border-bottom:1px solid var(--border);
+  background:transparent;color:var(--text);
+  cursor:pointer;transition:all .15s;
+  text-align:left;width:100%;
+  position:relative;
+}
+.action-btn:hover:not(.cooldown):not(.disabled-btn){background:rgba(0,245,212,.05);}
+.action-btn.urgent{animation:urgentPulse 1.5s ease-in-out infinite;}
+@keyframes urgentPulse{0%,100%{background:transparent;}50%{background:rgba(255,59,92,.07);}}
+.action-btn.cooldown{opacity:.5;cursor:default;}
+.action-btn.disabled-btn{opacity:.3;cursor:not-allowed;}
+
+.act-emoji{font-size:22px;flex-shrink:0;width:28px;text-align:center;}
+.act-info{flex:1;min-width:0;}
+.act-label{font-size:6px;letter-spacing:1px;color:var(--text);margin-bottom:3px;}
+.act-status{font-family:var(--vt);font-size:14px;line-height:1;}
+.act-status.ready{color:var(--green);}
+.act-status.ticking{color:var(--dim);}
+.act-status.urgent-text{color:var(--red);animation:blink 1s step-end infinite;}
+.act-urgency{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  font-size:14px;
+}
+
+/* ---- Stats strip (bottom of habitat col) ---- */
+.stats-strip{
+  flex-shrink:0;
+  display:grid;grid-template-columns:repeat(5,1fr);
+  border-top:1px solid var(--border);
+  background:var(--surface);
+}
+.stat-cell{
+  display:flex;flex-direction:column;align-items:center;
+  padding:6px 4px 5px;
+  border-right:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.stat-cell:last-child{border-right:none;}
+.stat-icon{font-size:14px;margin-bottom:3px;}
+.stat-label-sm{font-family:var(--vt);font-size:11px;color:var(--dim);margin-bottom:3px;}
+.stat-num{font-family:var(--vt);font-size:16px;font-weight:bold;}
+.stat-bar-mini{width:100%;height:4px;background:var(--border);margin-top:2px;}
+.stat-bar-fill{height:100%;transition:width .5s ease,background .5s ease;}
+.stat-cell.critical .stat-num{animation:blink 1s step-end infinite;}
+
+/* ---- Warning banner ---- */
+.warn-banner{
+  background:rgba(255,59,92,.12);
+  border-top:1px solid rgba(255,59,92,.4);
+  color:var(--red);font-family:var(--vt);font-size:14px;
+  padding:5px 12px;text-align:center;
+  flex-shrink:0;
+  animation:urgentPulse 2s ease infinite;
+  display:none;
+}
+.warn-banner.show{display:block;}
+
+/* ===== TOAST ===== */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--surface2);border:1px solid var(--cyan);
+  color:var(--text);font-family:var(--vt);font-size:18px;
+  padding:9px 18px;z-index:9000;transition:transform .3s ease;
+  white-space:nowrap;pointer-events:none;
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ===== EVO overlay ===== */
+#evoOverlay{
+  display:none;position:fixed;inset:0;z-index:7000;
+  background:rgba(0,0,0,.9);
+  flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:20px;
+}
+#evoOverlay.show{display:flex;animation:fadeIn .5s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.evo-title{font-size:11px;color:var(--cyan);text-shadow:0 0 30px var(--cyan);margin-bottom:16px;letter-spacing:3px;}
+.evo-form{font-family:var(--vt);font-size:32px;color:var(--pink);margin:10px 0 6px;letter-spacing:3px;}
+.evo-desc{font-family:var(--vt);font-size:18px;color:var(--text);max-width:300px;line-height:1.6;}
+.evo-close{
+  margin-top:20px;background:var(--cyan);color:#000;border:none;
+  font-family:var(--px);font-size:7px;padding:10px 22px;cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SELECTION SCREEN ============ -->
+<div id="selectionScreen">
+  <div class="sel-logo">XENO<span>PET</span></div>
+  <div class="sel-sub">::: ALIEN COMPANION SIMULATOR :::</div>
+  <div class="sel-prompt">⬡ CHOOSE YOUR ALIEN — THIS BOND IS PERMANENT ⬡</div>
+
+  <div class="species-grid" id="speciesGrid"></div>
+
+  <button class="sel-btn" id="selBtn" disabled onclick="bondAlien()">
+    BOND WITH ALIEN ▶
+  </button>
+</div>
+
+<!-- ============ GAME SCREEN ============ -->
+<div id="gameScreen">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="tb-name" id="tbName">—</div>
+    <div class="tb-stage" id="tbStage">LARVAL</div>
+    <div class="tb-time" id="tbTime">00:00</div>
+    <button class="tb-reset" onclick="confirmReset()">✕ RESET</button>
+  </div>
+
+  <!-- Body: habitat + actions -->
+  <div class="game-body">
+
+    <!-- Left: Habitat + stats -->
+    <div class="habitat-col">
+      <div class="habitat-wrap">
+        <canvas id="habitatCanvas"></canvas>
+        <div class="speech-bubble" id="speechBubble">...</div>
+      </div>
+      <div class="warn-banner" id="warnBanner">⚠ CRITICAL — YOUR ALIEN NEEDS CARE IMMEDIATELY</div>
+      <div class="stats-strip" id="statsStrip">
+        <!-- built by JS -->
+      </div>
+    </div>
+
+    <!-- Right: Actions -->
+    <div class="actions-col">
+      <div class="acts-title">▶ CARE ACTIONS</div>
+      <div id="actionsList">
+        <!-- built by JS -->
+      </div>
+      <div class="acts-title" style="margin-top:4px;border-top:2px solid var(--border2);color:var(--yellow);">★ SPACE ACTIVITIES</div>
+      <div id="hungerBuff" style="display:none;padding:6px 12px;background:rgba(255,233,74,.07);border-bottom:1px solid rgba(255,233,74,.2);font-family:var(--vt);font-size:14px;color:var(--yellow);text-align:center;"></div>
+      <div id="activitiesList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Activity mini-game overlay — sits over the habitat -->
+<div id="activityOverlay" style="display:none;position:fixed;inset:0;z-index:600;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,5,16,.95);padding:16px;">
+  <div id="actTitle" style="font-size:9px;color:var(--yellow);letter-spacing:3px;margin-bottom:5px;text-align:center;"></div>
+  <div id="actInstr" style="font-family:var(--vt);font-size:17px;color:var(--dim);margin-bottom:10px;text-align:center;max-width:320px;"></div>
+  <canvas id="actCanvas" width="320" height="240" style="image-rendering:pixelated;border:2px solid var(--border2);background:#020210;display:block;touch-action:none;cursor:crosshair;max-width:100%;"></canvas>
+  <div id="actScore" style="font-family:var(--vt);font-size:24px;color:var(--cyan);margin-top:10px;min-height:30px;text-align:center;letter-spacing:2px;"></div>
+  <div id="actRewards" style="font-family:var(--vt);font-size:16px;color:var(--green);min-height:22px;text-align:center;margin-top:2px;"></div>
+  <div style="display:flex;gap:10px;margin-top:12px;">
+    <button id="actStartBtn" onclick="activityAction()" style="background:var(--cyan);color:#000;border:none;font-family:var(--px);font-size:7px;padding:10px 22px;cursor:pointer;letter-spacing:1px;">START ▶</button>
+    <button onclick="activityClose()" style="background:none;border:1px solid var(--border2);color:var(--dim);font-family:var(--px);font-size:7px;padding:10px 16px;cursor:pointer;">QUIT</button>
+  </div>
+</div>
+
+<!-- Dead screen -->
+<div id="deadOverlay">
+  <div class="dead-skull">💀</div>
+  <div class="dead-title">YOUR ALIEN HAS DIED</div>
+  <div class="dead-msg" id="deadMsg">They waited. You didn't come.</div>
+  <button class="dead-btn" onclick="startOver()">START OVER</button>
+</div>
+
+<!-- Evo overlay -->
+<div id="evoOverlay">
+  <div class="evo-title">⬡ EVOLUTION ⬡</div>
+  <canvas id="evoSpriteCanvas" width="128" height="128" style="image-rendering:pixelated;margin:10px 0;"></canvas>
+  <div class="evo-form" id="evoFormName"></div>
+  <div class="evo-desc" id="evoFormDesc"></div>
+  <button class="evo-close" onclick="closeEvo()">CONTINUE ▶</button>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+/* ====================================================
+   SPRITE DATA — 16×16 pixel grids
+   Each char = color index (0=transparent, 1-6=colors)
+==================================================== */
+const SPRITES = {
+  GLORP:{
+    colors:['#3effa0','#1acc70','#a0ffd0','#ff6b9d','#000010','#ffe14a'],
+    frames:[
+      ["0000011110000000","0000111111100000","0001111111110000","0011111111111000","0111111111111100","0114111114111100","0115511115511100","0111111111111100","0011111111111000","0001111221111000","0000122222210000","0000012222100000","0000001111000000","0000001001000000","0000001001000000","0000000000000000"],
+      ["0000011110000000","0000111111100000","0001111111110000","0011111111111000","0111111111111100","0114111114111100","0115511115511100","0111111111111100","0011111111111000","0001111221111000","0000122222210000","0000012222100000","0000001111000000","0000000101000000","0000001010000000","0000000000000000"]
+    ]
+  },
+  SYLVEX:{
+    colors:['#3ac8ff','#1a80cc','#c0e8ff','#ff4af0','#000010','#ffe14a'],
+    frames:[
+      ["0000000110000000","0000001111000000","0000011111100000","0000111111110000","0001111111111000","0011141111141100","0011155111551100","0011111111111100","0001222111222000","0000111111110000","0000111221110000","0001111111111000","0001100000011000","0001100000011000","0001100000011000","0000000000000000"],
+      ["0000000110000000","0000001111000000","0000011111100000","0000111111110000","0001111111111000","0011141111141100","0011155111551100","0011111111111100","0001222111222000","0000111111110000","0000111221110000","0001111111111000","0001000000001000","0001100000011000","0001000000001000","0000000000000000"]
+    ]
+  },
+  VORNAX:{
+    colors:['#ff4a7a','#cc1a44','#ffaacc','#ff9f3c','#000010','#ffe14a'],
+    frames:[
+      ["0100000000000010","0110000000000110","0011000000001100","0001111111110000","0011111111111000","0114411111144100","0115511111155100","0111111111111100","0011333111333100","0001111111111000","0001110000111000","0001111001111000","0001100000011000","0001100000011000","0001100000011000","0000100000001000"],
+      ["0000000000000000","0100000000000010","0110000000000110","0011111111111000","0111111111111100","0114411111144100","0115511111155100","0111111111111100","0011333111333100","0001111111111000","0001110000111000","0001111001111000","0001100000011000","0001100000011000","0000100000001000","0000000000000000"]
+    ]
+  },
+  SOMNEX:{
+    colors:['#b07aff','#7a40cc','#ddd0ff','#ff4af0','#000010','#ffaaff'],
+    frames:[
+      ["0000011111100000","0000111111110000","0001111111111000","0011111111111100","0111111111111110","0111411111141110","0111551111551110","0111111111111110","0011111111111100","0001222222221000","0000111111110000","0000011111100000","0000011111100000","0000001111000000","0000000000000000","0000000000000000"],
+      ["0000000000000000","0000011111100000","0000111111110000","0001111111111000","0011111111111100","0111411111141100","0111551111551100","0111111111111100","0011111111111000","0001222222221000","0000111111110000","0000011111100000","0000001111000000","0000000000000000","0000000000000000","0000000000000000"]
+    ]
+  },
+  ZEPHYRI:{
+    colors:['#ffe14a','#ccaa10','#fffff0','#ff9f3c','#000010','#ff4af0'],
+    frames:[
+      ["0000001001000000","0000001001000000","0000011111100000","0000111111110000","0001111111111000","0011141111141100","0011155111551100","0011111111111100","0001111111111000","0000111221110000","0001111111111000","0001100110011000","0001100110011000","0001100110011000","0000100000001000","0000100000001000"],
+      ["0000001001000000","0000010010000000","0000011111100000","0000111111110000","0001111111111000","0011141111141100","0011155111551100","0011111111111100","0001111111111000","0000111221110000","0001111111111000","0001100110011000","0000100110001000","0001100110011000","0000100000001000","0000000000000000"]
+    ]
+  }
+};
+
+/* ====================================================
+   SPECIES DATA
+==================================================== */
+const SPECIES = {
+  GLORP:{id:'GLORP',name:'GLORP',planet:'Muckworld-7',trait:'RAVENOUS',
+    desc:'Always hungry. Drain 2× faster.',color:'#3effa0',
+    decay:{health:2.5,food:12,water:7,energy:3,hygiene:4,happiness:3,bathroom:8}},
+  SYLVEX:{id:'SYLVEX',name:'SYLVEX',planet:'Crystalis',trait:'CURIOUS',
+    desc:'Needs stimulation. Smart but picky.',color:'#3ac8ff',
+    decay:{health:2,food:6,water:5,energy:4,hygiene:3,happiness:6,bathroom:5}},
+  VORNAX:{id:'VORNAX',name:'VORNAX',planet:'Duskheim',trait:'AGGRESSIVE',
+    desc:'High health, very moody.',color:'#ff4a7a',
+    decay:{health:1.5,food:7,water:6,energy:3,hygiene:5,happiness:10,bathroom:6}},
+  SOMNEX:{id:'SOMNEX',name:'SOMNEX',planet:'Nebulara',trait:'SLEEPY',
+    desc:'Barely uses energy. Loves sleep.',color:'#b07aff',
+    decay:{health:2,food:5,water:4,energy:1.5,hygiene:3,happiness:3,bathroom:4}},
+  ZEPHYRI:{id:'ZEPHYRI',name:'ZEPHYRI',planet:'The Drift',trait:'LOYAL',
+    desc:'Resilient. Decays 20% slower.',color:'#ffe14a',
+    decay:{health:1.5,food:4.5,water:3.5,energy:2.2,hygiene:2.5,happiness:2.5,bathroom:3.5}}
+};
+
+/* ====================================================
+   CARE ACTIONS — each has a timer and stat effects
+==================================================== */
+const ACTIONS = [
+  {
+    id:'food', emoji:'🍗', label:'FEED',
+    cooldownMs: 3*60*60*1000,   // 3 hours until needed again
+    urgentAfterMs: 4*60*60*1000, // urgent at 4h
+    criticalAfterMs: 6*60*60*1000,// critical at 6h (health drain starts)
+    stat:'food',
+    effects:{food:70, health:5},
+    hintReady:'Hungry! Feed me.',
+    hintUrgent:'STARVING! Feed me NOW!',
+    hintDone:'Mmm. That hit the spot.'
+  },
+  {
+    id:'water', emoji:'💧', label:'WATER',
+    cooldownMs: 2*60*60*1000,
+    urgentAfterMs: 3*60*60*1000,
+    criticalAfterMs: 5*60*60*1000,
+    stat:'water',
+    effects:{water:80, health:3},
+    hintReady:'Thirsty!',
+    hintUrgent:'SO THIRSTY. Water please!',
+    hintDone:'Ahh... refreshing.'
+  },
+  {
+    id:'bath', emoji:'🛁', label:'BATH',
+    cooldownMs: 4*60*60*1000,
+    urgentAfterMs: 6*60*60*1000,
+    criticalAfterMs: 9*60*60*1000,
+    stat:'hygiene',
+    effects:{hygiene:90, happiness:10},
+    hintReady:'Could use a wash.',
+    hintUrgent:'I smell terrible. BATH.',
+    hintDone:'Squeaky clean!'
+  },
+  {
+    id:'bathroom', emoji:'🚽', label:'BATHROOM',
+    cooldownMs: 2*60*60*1000,
+    urgentAfterMs: 3*60*60*1000,
+    criticalAfterMs: 4.5*60*60*1000,
+    stat:'bathroom',
+    effects:{bathroom:100, happiness:15},
+    hintReady:'Need to go...',
+    hintUrgent:'URGENT. Bathroom NOW.',
+    hintDone:'Oh thank goodness.'
+  },
+  {
+    id:'play', emoji:'🎮', label:'PLAY',
+    cooldownMs: 3*60*60*1000,
+    urgentAfterMs: 5*60*60*1000,
+    criticalAfterMs: 8*60*60*1000,
+    stat:'happiness',
+    effects:{happiness:60, energy:-10},
+    hintReady:'Wanna play!',
+    hintUrgent:'SO BORED. Play with me!',
+    hintDone:'That was fun!'
+  },
+  {
+    id:'sleep', emoji:'💤', label:'SLEEP',
+    cooldownMs: 8*60*60*1000,
+    urgentAfterMs: 10*60*60*1000,
+    criticalAfterMs: 14*60*60*1000,
+    stat:'energy',
+    effects:{energy:100, health:5},
+    hintReady:'Getting sleepy...',
+    hintUrgent:'Exhausted. Need sleep!',
+    hintDone:'That was a great nap.'
+  },
+  {
+    id:'medicine', emoji:'💊', label:'MEDICINE',
+    cooldownMs: 12*60*60*1000,
+    urgentAfterMs: 999*60*60*1000, // never urgent on its own
+    criticalAfterMs: 999*60*60*1000,
+    stat:'health',
+    effects:{health:40},
+    hintReady:'Feeling off...',
+    hintUrgent:'',
+    hintDone:'Feeling better.'
+  },
+  {
+    id:'pet', emoji:'🤗', label:'CUDDLE',
+    cooldownMs: 1*60*60*1000,
+    urgentAfterMs: 999*60*60*1000,
+    criticalAfterMs: 999*60*60*1000,
+    stat:'happiness',
+    effects:{happiness:20, health:3},
+    hintReady:'Want attention!',
+    hintUrgent:'',
+    hintDone:'*happy alien noises*'
+  }
+];
+
+/* ====================================================
+   STAT DISPLAY CONFIG
+==================================================== */
+const STATS_DISPLAY = [
+  {key:'health',  icon:'❤️',  label:'HP',   color:'#ff3b5c', criticalAt:20},
+  {key:'food',    icon:'🍗',  label:'FOOD', color:'#ff8c42', criticalAt:15},
+  {key:'water',   icon:'💧',  label:'H₂O',  color:'#3bc4ff', criticalAt:15},
+  {key:'energy',  icon:'⚡',  label:'NRG',  color:'#ffe94a', criticalAt:10},
+  {key:'happiness',icon:'😊', label:'JOY',  color:'#3bffaa', criticalAt:20},
+];
+
+/* ====================================================
+   DIALOGUES
+==================================================== */
+const DIALOGUES = {
+  greeting_morning:["Good morning! Ready for today?","Morning! My food meter is already complaining.","Rise and shine! Don't forget to feed me."],
+  greeting_night:["It's late... I'm tired.","Nighttime. Peaceful. Feed me though.","Getting sleepy..."],
+  greeting_noon:["Hey! Glad you're here.","Checking in? Appreciate it.","Oh good, I was hoping you'd visit."],
+  neglect_2h:["You were gone a while...","I managed. Barely.","Finally! I've been waiting."],
+  neglect_6h:["Where were you?? I've been alone for hours.","Six hours. Do you know what that's like??","I was starting to think you forgot me."],
+  neglect_12h:["...I almost gave up.","Half a day. My stats are a mess.","Please don't leave me that long again."],
+  hungry:["I'm hungry...","Feed me? Please?","My stomach is making embarrassing sounds."],
+  thirsty:["So thirsty...","Water. Need water.","Even a small sip would help."],
+  dirty:["I need a bath. I can smell myself.","Can we do a bath soon?","Getting a little rank in here."],
+  bathroom:["I really need to go...","Bathroom. Urgent.","This can't wait much longer."],
+  bored:["I'm so bored...","Play with me?","There's nothing to do..."],
+  tired:["*yawn*","Getting sleepy...","Could really use a nap."],
+  sick:["I don't feel well...","Something's wrong with me...","Health is dropping... help?"],
+  happy:["Life is good!","Everything is perfect right now.","This is what happiness feels like."],
+  idle:["...","Just hanging out.","Hi! Nothing urgent right now.","...watching the cosmos go by."]
+};
+
+function pickLine(key){ const a=DIALOGUES[key]; return a[Math.floor(Math.random()*a.length)]; }
+
+/* ====================================================
+   EVOLUTION FORMS
+==================================================== */
+const EVO_FORMS = {
+  PSYCHIC:  {name:'PSYCHIC ELDER', desc:'Intelligence transcended. Glowing eyes.'},
+  TITAN:    {name:'APEX TITAN',    desc:'Unmatched strength. Iron constitution.'},
+  EMPATH:   {name:'COSMIC EMPATH', desc:'Pure joy radiates from within.'},
+  GUARDIAN: {name:'NOBLE GUARDIAN',desc:'Balance incarnate. A protector.'},
+  GLITCH:   {name:'GLITCH HORROR', desc:'Corrupted by neglect. Reality breaks.'},
+  WRAITH:   {name:'FERAL WRAITH',  desc:'Abandoned. Untameable. Gone.'}
+};
+
+/* ====================================================
+   STATE
+==================================================== */
+const SAVE_KEY = 'xenopet3_save';
+let G = null;            // game state
+let RAF = null;          // animation frame
+let CLK = null;          // clock interval
+let CD_TICK = null;      // countdown tick interval
+let SPRITE_FRAME = 0;
+let selectedId = null;
+// Active care animation: { id, frame, duration }
+let activeAnim = null;
+
+/* ====================================================
+   SAVE / LOAD
+==================================================== */
+function save(){
+  if(!G) return;
+  G.alien.lastSeen = Date.now();
+  localStorage.setItem(SAVE_KEY, JSON.stringify(G));
+}
+function load(){
+  try{ const d=localStorage.getItem(SAVE_KEY); if(d) return JSON.parse(d); }catch(e){}
+  return null;
+}
+
+/* ====================================================
+   SPRITE DRAWING
+==================================================== */
+function drawSprite(ctx, id, scale, ox, oy, frame, tint){
+  const sp = SPRITES[id]; if(!sp) return;
+  const f = frame % sp.frames.length;
+  const grid = sp.frames[f];
+  for(let r=0;r<16;r++){
+    for(let c=0;c<16;c++){
+      const ch = grid[r][c]; if(ch==='0') continue;
+      ctx.fillStyle = sp.colors[parseInt(ch)-1];
+      ctx.fillRect(ox+c*scale, oy+r*scale, scale, scale);
+    }
+  }
+  if(tint){
+    ctx.fillStyle = tint;
+    ctx.fillRect(ox, oy, 16*scale, 16*scale);
+  }
+}
+
+/* ====================================================
+   BUILD SELECTION SCREEN
+==================================================== */
+function buildSelection(){
+  const grid = document.getElementById('speciesGrid');
+  Object.values(SPECIES).forEach(sp => {
+    const card = document.createElement('div');
+    card.className = 'sp-card';
+    card.dataset.id = sp.id;
+    card.onclick = () => pickSpecies(sp.id);
+
+    const cv = document.createElement('canvas');
+    cv.className = 'sp-canvas';
+    cv.width = 64; cv.height = 64;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    drawSprite(ctx, sp.id, 4, 0, 0, 0, null);
+    let f=0; setInterval(()=>{ ctx.clearRect(0,0,64,64); drawSprite(ctx,sp.id,4,0,0,Math.floor(f++/8),null); }, 120);
+
+    card.innerHTML = `
+      <div class="sp-name">${sp.name}</div>
+      <div class="sp-planet">${sp.planet}</div>
+      <div class="sp-trait">${sp.trait}</div>
+      <div class="sp-desc">${sp.desc}</div>`;
+    card.insertBefore(cv, card.firstChild);
+    grid.appendChild(card);
+  });
+}
+
+function pickSpecies(id){
+  selectedId = id;
+  document.querySelectorAll('.sp-card').forEach(c => c.classList.toggle('picked', c.dataset.id === id));
+  document.getElementById('selBtn').disabled = false;
+}
+
+function bondAlien(){
+  if(!selectedId) return;
+  const sp = SPECIES[selectedId];
+  const now = Date.now();
+  G = {
+    alien:{
+      speciesId: selectedId,
+      name: sp.name,
+      stage: 'LARVAL',
+      evoForm: null,
+      bondedAt: now,
+      lastSeen: now,
+      dead: false,
+      deathMsg: '',
+      stats:{ health:100, food:80, water:80, energy:90, hygiene:90, happiness:80, bathroom:70 },
+      // last-cared timestamps
+      lastFood: now, lastWater: now, lastBath: now,
+      lastBathroom: now-(60*60*1000), // start needing bathroom sooner
+      lastPlay: now, lastSleep: now-(2*60*60*1000), lastMedicine: now, lastPet: now,
+      careScore: 0
+    }
+  };
+  save();
+  switchToGame();
+}
+
+/* ====================================================
+   SWITCH SCREENS
+==================================================== */
+function switchToGame(){
+  document.getElementById('selectionScreen').style.display = 'none';
+  const gs = document.getElementById('gameScreen');
+  gs.style.display = 'flex'; // immediate show — no classList dance
+  gs.classList.add('active');
+
+  applyOfflineDecay();
+  buildStatsStrip();
+  buildActionsList();
+  startHabitat();
+  startClock();
+  startCDTick();
+  renderAll();
+  save();
+}
+
+/* ====================================================
+   OFFLINE DECAY — apply time passed since last seen
+==================================================== */
+function applyOfflineDecay(){
+  const {alien} = G;
+  const now = Date.now();
+  const hrs = Math.max(0, (now - alien.lastSeen) / 3600000);
+  if(hrs < 0.01) return;
+
+  const sp = SPECIES[alien.speciesId];
+  const decay = sp.decay;
+
+  // Each stat drains based on hours * per-hour decay rate
+  alien.stats.food      = Math.max(0, alien.stats.food      - decay.food      * hrs);
+  alien.stats.water     = Math.max(0, alien.stats.water     - decay.water     * hrs);
+  alien.stats.energy    = Math.max(0, alien.stats.energy    - decay.energy    * hrs);
+  alien.stats.hygiene   = Math.max(0, alien.stats.hygiene   - decay.hygiene   * hrs);
+  alien.stats.happiness = Math.max(0, alien.stats.happiness - decay.happiness * hrs);
+  alien.stats.bathroom  = Math.max(0, alien.stats.bathroom  - decay.bathroom  * hrs);
+
+  // Health drains if critical stats hit zero
+  let healthHit = 0;
+  if(alien.stats.food   === 0) healthHit += 8 * hrs;
+  if(alien.stats.water  === 0) healthHit += 6 * hrs;
+  if(alien.stats.bathroom === 0) healthHit += 4 * hrs;
+  alien.stats.health = Math.max(0, alien.stats.health - decay.health * hrs - healthHit);
+
+  alien.lastSeen = now;
+  checkDeath();
+}
+
+/* ====================================================
+   REALTIME DECAY TICK — called every 30 seconds
+==================================================== */
+function tickDecay(){
+  if(!G || G.alien.dead) return;
+  const {alien} = G;
+  const sp = SPECIES[alien.speciesId];
+  const decay = sp.decay;
+  const hrs = 30/3600; // 30 seconds in hours
+
+  alien.stats.food      = Math.max(0, alien.stats.food      - decay.food      * hrs);
+  alien.stats.water     = Math.max(0, alien.stats.water     - decay.water     * hrs);
+  alien.stats.energy    = Math.max(0, alien.stats.energy    - decay.energy    * hrs);
+  alien.stats.hygiene   = Math.max(0, alien.stats.hygiene   - decay.hygiene   * hrs);
+  alien.stats.happiness = Math.max(0, alien.stats.happiness - decay.happiness * hrs);
+  alien.stats.bathroom  = Math.max(0, alien.stats.bathroom  - decay.bathroom  * hrs);
+
+  let hDrain = 0;
+  if(alien.stats.food   === 0) hDrain += 8 * hrs;
+  if(alien.stats.water  === 0) hDrain += 6 * hrs;
+  if(alien.stats.bathroom === 0) hDrain += 4 * hrs;
+  alien.stats.health = Math.max(0, alien.stats.health - (SPECIES[alien.speciesId].decay.health * hrs) - hDrain);
+
+  checkDeath();
+  updateStatsDisplay();
+  updateActionBadges();
+  checkEvolution();
+  save();
+}
+
+/* ====================================================
+   DEATH CHECK
+==================================================== */
+function checkDeath(){
+  const {alien} = G;
+  if(alien.dead) return;
+  if(alien.stats.health <= 0){
+    alien.dead = true;
+    // Figure out cause of death
+    if(alien.stats.food === 0 && alien.stats.water === 0) alien.deathMsg = 'Starved and dehydrated. They needed you.';
+    else if(alien.stats.food === 0) alien.deathMsg = 'They starved to death. Food was all they needed.';
+    else if(alien.stats.water === 0) alien.deathMsg = 'They died of dehydration. Please remember the water.';
+    else alien.deathMsg = 'Health reached zero. They waited for you as long as they could.';
+    save();
+    showDead();
+  }
+}
+
+function showDead(){
+  document.getElementById('deadMsg').textContent = G.alien.deathMsg;
+  document.getElementById('deadOverlay').classList.add('show');
+}
+
+function startOver(){
+  localStorage.removeItem(SAVE_KEY);
+  G = null; selectedId = null;
+  if(RAF) cancelAnimationFrame(RAF);
+  if(CLK) clearInterval(CLK);
+  if(CD_TICK) clearInterval(CD_TICK);
+  document.getElementById('deadOverlay').classList.remove('show');
+  document.getElementById('gameScreen').classList.remove('active');
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('selectionScreen').style.display = '';
+  document.getElementById('selBtn').disabled = true;
+  document.querySelectorAll('.sp-card').forEach(c=>c.classList.remove('picked'));
+  selectedId = null;
+}
+
+/* ====================================================
+   EVOLUTION CHECK
+==================================================== */
+function checkEvolution(){
+  const {alien} = G;
+  const days = (Date.now() - alien.bondedAt) / 86400000;
+
+  let newStage = 'LARVAL';
+  if(days >= 4 && days < 8) newStage = 'JUVENILE';
+  if(days >= 8) newStage = 'ADULT';
+
+  if(newStage === 'ADULT' && !alien.evoForm){
+    const {stats, careScore} = alien;
+    if(stats.health === 0 || stats.food === 0 || stats.water === 0) alien.evoForm = 'GLITCH';
+    else if(careScore < 10) alien.evoForm = 'WRAITH';
+    else if(stats.energy > 70 && stats.happiness > 70) alien.evoForm = 'EMPATH';
+    else if(stats.health > 80) alien.evoForm = 'TITAN';
+    else if(stats.happiness > 75) alien.evoForm = 'GUARDIAN';
+    else alien.evoForm = 'PSYCHIC';
+    showEvo();
+  }
+
+  if(alien.stage !== newStage){
+    alien.stage = newStage;
+    document.getElementById('tbStage').textContent = newStage + (alien.evoForm ? ` · ${EVO_FORMS[alien.evoForm].name}` : '');
+  }
+}
+
+function showEvo(){
+  const form = EVO_FORMS[G.alien.evoForm];
+  document.getElementById('evoFormName').textContent = form.name;
+  document.getElementById('evoFormDesc').textContent = form.desc;
+  // Draw sprite in evo canvas
+  const c = document.getElementById('evoSpriteCanvas');
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  let f=0; const ei = setInterval(()=>{ ctx.clearRect(0,0,128,128); drawSprite(ctx,G.alien.speciesId,8,0,0,Math.floor(f++/8),null); },120);
+  document.getElementById('evoOverlay').classList.add('show');
+  setTimeout(()=>clearInterval(ei), 10000);
+}
+function closeEvo(){ document.getElementById('evoOverlay').classList.remove('show'); }
+
+/* ====================================================
+   BUILD UI ELEMENTS
+==================================================== */
+function buildStatsStrip(){
+  const strip = document.getElementById('statsStrip');
+  strip.innerHTML = '';
+  STATS_DISPLAY.forEach(s => {
+    const cell = document.createElement('div');
+    cell.className = 'stat-cell';
+    cell.id = `sc-${s.key}`;
+    cell.innerHTML = `
+      <div class="stat-icon">${s.icon}</div>
+      <div class="stat-label-sm">${s.label}</div>
+      <div class="stat-num" id="sn-${s.key}" style="color:${s.color}">100</div>
+      <div class="stat-bar-mini"><div class="stat-bar-fill" id="sb-${s.key}" style="background:${s.color};width:100%"></div></div>`;
+    strip.appendChild(cell);
+  });
+}
+
+function buildActionsList(){
+  const list = document.getElementById('actionsList');
+  list.innerHTML = '';
+  ACTIONS.forEach(act => {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn';
+    btn.id = `ab-${act.id}`;
+    btn.onclick = () => doAction(act.id);
+    btn.innerHTML = `
+      <div class="act-emoji">${act.emoji}</div>
+      <div class="act-info">
+        <div class="act-label">${act.label}</div>
+        <div class="act-status ready" id="as-${act.id}">READY</div>
+      </div>
+      <div class="act-urgency" id="au-${act.id}"></div>`;
+    list.appendChild(btn);
+  });
+}
+
+/* ====================================================
+   PERFORM ACTION
+==================================================== */
+function doAction(id){
+  if(!G || G.alien.dead) return;
+  const {alien} = G;
+  const act = ACTIONS.find(a=>a.id===id);
+  if(!act) return;
+
+  // Check cooldown
+  const lastKey = `last${id.charAt(0).toUpperCase()+id.slice(1)}`;
+  const elapsed = Date.now() - (alien[lastKey]||0);
+  if(elapsed < act.cooldownMs * 0.1){ // can act after 10% of cooldown (so not double-tap locked)
+    toast(`${act.emoji} Not yet!`); return;
+  }
+
+  // Apply effects
+  for(const [stat,val] of Object.entries(act.effects)){
+    alien.stats[stat] = Math.min(100, (alien.stats[stat]||0) + val);
+  }
+  alien[lastKey] = Date.now();
+  alien.careScore = (alien.careScore||0) + 1;
+
+  // Dialogue
+  setSpeech(act.hintDone || 'Thanks!');
+  toast(`${act.emoji} ${act.label} done!`);
+
+  // Trigger care animation on the habitat canvas
+  const animIds = ['food','water','bath','play','sleep','medicine'];
+  if(animIds.includes(id)) activeAnim = { id, frame: 0, duration: 180 };
+
+  updateStatsDisplay();
+  updateActionBadges();
+  save();
+}
+
+/* ====================================================
+   RENDER / UPDATE
+==================================================== */
+function renderAll(){
+  const {alien} = G;
+  document.getElementById('tbName').textContent = alien.name + ' //';
+  document.getElementById('tbStage').textContent = alien.stage + (alien.evoForm ? ` · ${EVO_FORMS[alien.evoForm].name}` : '');
+  updateStatsDisplay();
+  updateActionBadges();
+  updateSpeechBubble();
+  checkWarnBanner();
+}
+
+function updateStatsDisplay(){
+  if(!G) return;
+  const {stats} = G.alien;
+  STATS_DISPLAY.forEach(s => {
+    const val = Math.max(0, Math.min(100, stats[s.key]||0));
+    const num = document.getElementById(`sn-${s.key}`);
+    const bar = document.getElementById(`sb-${s.key}`);
+    const cell = document.getElementById(`sc-${s.key}`);
+    if(num) num.textContent = Math.floor(val);
+    if(bar) bar.style.width = val + '%';
+    if(cell){
+      cell.classList.toggle('critical', val <= s.criticalAt);
+      if(val <= s.criticalAt) bar.style.background = '#ff3b5c';
+      else bar.style.background = s.color;
+      if(val <= s.criticalAt) num.style.color = '#ff3b5c';
+      else num.style.color = s.color;
+    }
+  });
+}
+
+/* Format ms remaining into h:mm:ss or mm:ss */
+function fmtTime(ms){
+  if(ms <= 0) return 'NOW';
+  const s = Math.ceil(ms/1000);
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s%60;
+  if(h > 0) return `${h}h ${m.toString().padStart(2,'0')}m`;
+  return `${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+}
+
+function updateActionBadges(){
+  if(!G) return;
+  const {alien} = G;
+  const now = Date.now();
+
+  ACTIONS.forEach(act => {
+    const lastKey = `last${act.id.charAt(0).toUpperCase()+act.id.slice(1)}`;
+    const elapsed = now - (alien[lastKey] || 0);
+    const btn = document.getElementById(`ab-${act.id}`);
+    const statusEl = document.getElementById(`as-${act.id}`);
+    const urgencyEl = document.getElementById(`au-${act.id}`);
+    if(!btn || !statusEl) return;
+
+    const timeUntilNeeded = act.cooldownMs - elapsed;
+    const isUrgent = elapsed >= act.urgentAfterMs;
+    const isCritical = elapsed >= act.criticalAfterMs;
+    const isReady = timeUntilNeeded <= 0;
+
+    btn.classList.remove('cooldown','urgent','disabled-btn');
+    urgencyEl.textContent = '';
+
+    if(isCritical){
+      btn.classList.add('urgent');
+      statusEl.className = 'act-status urgent-text';
+      statusEl.textContent = act.hintUrgent || 'CRITICAL!';
+      urgencyEl.textContent = '🔴';
+    } else if(isUrgent){
+      btn.classList.add('urgent');
+      statusEl.className = 'act-status urgent-text';
+      statusEl.textContent = act.hintReady || 'NEEDED!';
+      urgencyEl.textContent = '🟡';
+    } else if(isReady){
+      statusEl.className = 'act-status ready';
+      statusEl.textContent = 'READY';
+    } else {
+      btn.classList.add('cooldown');
+      statusEl.className = 'act-status ticking';
+      statusEl.textContent = fmtTime(timeUntilNeeded);
+    }
+  });
+}
+
+function updateSpeechBubble(){
+  if(!G || G.alien.dead) return;
+  const {alien} = G;
+  const {stats} = alien;
+  const now = Date.now();
+  const hrsSince = (now - alien.lastSeen) / 3600000;
+  let line = '';
+
+  if(stats.health < 20)              line = pickLine('sick');
+  else if(hrsSince > 12)             line = pickLine('neglect_12h');
+  else if(hrsSince > 6)              line = pickLine('neglect_6h');
+  else if(hrsSince > 2)              line = pickLine('neglect_2h');
+  else if(stats.bathroom < 20)       line = pickLine('bathroom');
+  else if(stats.food < 20)           line = pickLine('hungry');
+  else if(stats.water < 20)          line = pickLine('thirsty');
+  else if(stats.hygiene < 20)        line = pickLine('dirty');
+  else if(stats.happiness < 20)      line = pickLine('bored');
+  else if(stats.energy < 15)         line = pickLine('tired');
+  else if(stats.health > 70 && stats.happiness > 70) line = pickLine('happy');
+  else {
+    const h = new Date().getHours();
+    if(h < 7) line = pickLine('greeting_night');
+    else if(h < 13) line = pickLine('greeting_morning');
+    else if(h >= 21) line = pickLine('greeting_night');
+    else line = pickLine('greeting_noon');
+  }
+  setSpeech(line);
+}
+
+function setSpeech(text){
+  const el = document.getElementById('speechBubble');
+  if(el) el.textContent = text;
+}
+
+function checkWarnBanner(){
+  if(!G) return;
+  const {stats} = G.alien;
+  const bad = stats.health < 25 || stats.food < 15 || stats.water < 15 || stats.bathroom < 10;
+  document.getElementById('warnBanner').classList.toggle('show', bad);
+}
+
+/* ====================================================
+   HABITAT CANVAS
+==================================================== */
+function startHabitat(){
+  if(RAF) cancelAnimationFrame(RAF);
+  const canvas = document.getElementById('habitatCanvas');
+
+  function resize(){
+    canvas.width  = canvas.offsetWidth  || canvas.parentElement.offsetWidth  || 400;
+    canvas.height = canvas.offsetHeight || canvas.parentElement.offsetHeight || 300;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let frame = 0;
+  function draw(){
+    RAF = requestAnimationFrame(draw);
+    if(!G) return;
+    resize(); // keep canvas sized
+
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    if(W === 0 || H === 0) return;
+
+    ctx.clearRect(0,0,W,H);
+
+    // Sky gradient by time of day
+    const hr = new Date().getHours();
+    let c1, c2;
+    if(hr>=5&&hr<8)   {c1='#0d0820';c2='#1a1040';}
+    else if(hr>=8&&hr<18)  {c1='#060a1e';c2='#0f1535';}
+    else if(hr>=18&&hr<22) {c1='#160825';c2='#220d3a';}
+    else               {c1='#020208';c2='#06041a';}
+    const sky = ctx.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,c1); sky.addColorStop(1,c2);
+    ctx.fillStyle = sky; ctx.fillRect(0,0,W,H);
+
+    // Stars
+    const starSeeds=[[.07,.12],[.18,.05],[.32,.18],[.48,.08],[.62,.15],[.74,.06],[.88,.2],[.93,.1],[.22,.28],[.55,.22],[.78,.3]];
+    starSeeds.forEach(([sx,sy])=>{
+      const twinkle = 0.3 + 0.7*Math.abs(Math.sin(frame*0.02+sx*15));
+      ctx.globalAlpha = twinkle * 0.9;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(Math.floor(sx*W), Math.floor(sy*H*0.75), 2, 2);
+    });
+    ctx.globalAlpha = 1;
+
+    // Ground
+    ctx.fillStyle = '#0a1208'; ctx.fillRect(0,H*0.78,W,H*0.22);
+    ctx.fillStyle = '#111f0e'; ctx.fillRect(0,H*0.76,W,H*0.04);
+
+    // Alien sprite — centered, sitting on ground
+    const scale = Math.max(3, Math.min(8, Math.floor(Math.min(W,H)/52)));
+    const sw = 16*scale, sh = 16*scale;
+    const ax = Math.floor((W-sw)/2);
+    const ay = Math.floor(H*0.76 - sh - 2 + Math.sin(frame*0.04)*3);
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,.3)';
+    ctx.beginPath();
+    ctx.ellipse(Math.floor(W/2), Math.floor(H*0.78), Math.floor(sw*0.38), 5, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Determine tint
+    let tint = null;
+    const h = G.alien.stats.health;
+    if(G.alien.dead) tint = 'rgba(80,0,0,0.5)';
+    else if(h < 20) tint = `rgba(255,0,60,${0.1+0.1*Math.abs(Math.sin(frame*.05))})`;
+
+    // Draw on temp canvas for pixel-perfect scaling
+    const tmp = document.createElement('canvas');
+    tmp.width = sw; tmp.height = sh;
+    const tc = tmp.getContext('2d');
+    tc.imageSmoothingEnabled = false;
+    drawSprite(tc, G.alien.speciesId, scale, 0, 0, Math.floor(frame/10), tint);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tmp, ax, ay);
+
+    // Species color glow
+    const sp = SPECIES[G.alien.speciesId];
+    const [r,g,b] = hexToRgb(sp.color);
+    const glow = ctx.createRadialGradient(W/2,H*0.77,0,W/2,H*0.77,80);
+    glow.addColorStop(0,`rgba(${r},${g},${b},0.14)`);
+    glow.addColorStop(1,'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0,0,W,H);
+
+    // ═══ CARE ANIMATIONS ═══
+    if(activeAnim){
+      const af = activeAnim.frame;
+      const cx = W/2, alienTop = ay;
+      const progress = af / activeAnim.duration; // 0→1
+      const fadeOut = af > activeAnim.duration * 0.65 ? 1 - (af - activeAnim.duration*0.65)/(activeAnim.duration*0.35) : 1;
+
+      ctx.save();
+
+      // ── FEED 🍗 ── chicken legs rain down, alien bounces happily
+      if(activeAnim.id === 'food'){
+        // Falling food items
+        const foods = ['🍗','🍖','⭐','🌮','🍕'];
+        for(let i=0;i<6;i++){
+          const seed = i * 137.5;
+          const startX = (Math.sin(seed)*0.4+0.5)*W;
+          const t = ((af/3 + seed) % activeAnim.duration) / activeAnim.duration;
+          const fy = t * (H*0.85);
+          const alpha = fadeOut * Math.min(1, t < 0.1 ? t*10 : 1);
+          ctx.globalAlpha = alpha;
+          ctx.font = `${20 + Math.sin(seed)*4}px serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(foods[i%foods.length], startX, fy);
+        }
+        // Happy glow ring around alien
+        ctx.globalAlpha = fadeOut * 0.5 * Math.abs(Math.sin(af*0.2));
+        const ring = ctx.createRadialGradient(cx, alienTop+sh/2, sw*0.3, cx, alienTop+sh/2, sw*0.9);
+        ring.addColorStop(0,'transparent');
+        ring.addColorStop(0.7,'rgba(255,200,50,0.4)');
+        ring.addColorStop(1,'transparent');
+        ctx.fillStyle = ring;
+        ctx.fillRect(0,0,W,H);
+        // Bouncing "+FOOD" text
+        const textY = alienTop - 20 - Math.abs(Math.sin(af*0.15))*18;
+        ctx.globalAlpha = fadeOut;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#ffcc44';
+        ctx.textAlign = 'center';
+        ctx.fillText('+FOOD', cx, textY);
+      }
+
+      // ── WATER 💧 ── droplets arc up and fall, ripple at ground
+      if(activeAnim.id === 'water'){
+        for(let i=0;i<10;i++){
+          const seed = i*36;
+          const t = ((af*1.5 + seed*2) % 100) / 100;
+          const angle = (seed/360)*Math.PI*2 - Math.PI*0.6;
+          const radius = 45 + i*8;
+          const dx = Math.cos(angle)*radius*t;
+          const dy = -(Math.sin(Math.PI*t)*50) + 60*t*t;
+          const alpha = fadeOut * (1-t*0.5);
+          ctx.globalAlpha = alpha;
+          // teardrop
+          ctx.fillStyle = '#3bc4ff';
+          ctx.shadowBlur = 8; ctx.shadowColor = '#3bc4ff';
+          ctx.beginPath();
+          ctx.arc(cx+dx, alienTop+sh*0.4+dy, 4+i%3, 0, Math.PI*2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        // Ripple at ground level
+        const rippleR = (af % 40) / 40 * 50;
+        ctx.globalAlpha = fadeOut * (1 - (af%40)/40) * 0.6;
+        ctx.strokeStyle = '#3bc4ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, H*0.77, rippleR, rippleR*0.3, 0, 0, Math.PI*2);
+        ctx.stroke();
+        // "+WATER" float
+        const wy = alienTop - 20 - progress*25;
+        ctx.globalAlpha = fadeOut;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#3bc4ff';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 8; ctx.shadowColor = '#3bc4ff';
+        ctx.fillText('+WATER', cx, wy);
+        ctx.shadowBlur = 0;
+      }
+
+      // ── BATH 🛁 ── bubbles float up, sparkle bursts
+      if(activeAnim.id === 'bath'){
+        // soap bubbles rising
+        for(let i=0;i<14;i++){
+          const seed = i*25.7;
+          const lifeT = ((af*0.8 + seed*3) % 90) / 90;
+          const bx = cx + Math.sin(seed+af*0.02)*sw*0.7;
+          const by = alienTop + sh - lifeT * (sh + 60);
+          const br = 4 + (i%4);
+          ctx.globalAlpha = fadeOut * (1-lifeT*0.7) * 0.8;
+          // bubble outline
+          ctx.strokeStyle = `hsl(${180+i*15},80%,75%)`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.stroke();
+          // shine
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.beginPath(); ctx.arc(bx-br*0.3, by-br*0.3, br*0.3, 0, Math.PI*2); ctx.fill();
+        }
+        // sparkle burst when fresh (first 30 frames)
+        if(af < 60){
+          for(let i=0;i<8;i++){
+            const angle = (i/8)*Math.PI*2 + af*0.1;
+            const dist = 20 + af*0.8;
+            const sx = cx + Math.cos(angle)*dist;
+            const sy = alienTop + sh*0.4 + Math.sin(angle)*dist*0.6;
+            ctx.globalAlpha = (1 - af/60) * fadeOut;
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 6; ctx.shadowColor = '#fff';
+            ctx.fillRect(Math.floor(sx), Math.floor(sy), 3, 3);
+            ctx.shadowBlur = 0;
+          }
+        }
+        // "SQUEAKY CLEAN!" text
+        const bTextY = alienTop - 16 - Math.sin(af*0.1)*6;
+        ctx.globalAlpha = fadeOut;
+        ctx.font = 'bold 9px monospace';
+        ctx.fillStyle = '#b0f0ff';
+        ctx.textAlign = 'center';
+        ctx.fillText('✨ CLEAN!', cx, bTextY);
+      }
+
+      // ── PLAY 🎮 ── alien does a happy spin, stars burst out
+      if(activeAnim.id === 'play'){
+        // Spinning happy stars burst outward
+        for(let i=0;i<12;i++){
+          const angle = (i/12)*Math.PI*2 + af*0.05;
+          const dist = 15 + Math.min(af*1.2, 70);
+          const px2 = cx + Math.cos(angle)*dist;
+          const py2 = alienTop + sh*0.5 + Math.sin(angle)*dist*0.65;
+          const size = 3 + (i%3);
+          ctx.globalAlpha = fadeOut * (0.4 + 0.6*Math.abs(Math.sin(af*0.15+i)));
+          ctx.fillStyle = i%3===0?'#ffe94a':i%3===1?'#ff2fff':'#3bffaa';
+          ctx.shadowBlur = 8; ctx.shadowColor = ctx.fillStyle;
+          // pixel star
+          ctx.fillRect(Math.floor(px2-size/2), Math.floor(py2-1), size, 2);
+          ctx.fillRect(Math.floor(px2-1), Math.floor(py2-size/2), 2, size);
+          ctx.shadowBlur = 0;
+        }
+        // bouncy +JOY text
+        const joyOff = Math.abs(Math.sin(af*0.2))*14;
+        ctx.globalAlpha = fadeOut;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#3bffaa';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#3bffaa';
+        ctx.fillText('+JOY', cx, alienTop - 16 - joyOff);
+        ctx.shadowBlur = 0;
+        // confetti
+        for(let i=0;i<8;i++){
+          const cx2 = (i/8)*W;
+          const cy2 = ((af*2 + i*40) % H*0.8);
+          ctx.globalAlpha = fadeOut * 0.6;
+          ctx.fillStyle = ['#ffe94a','#ff2fff','#3bc4ff','#3bffaa'][i%4];
+          ctx.fillRect(Math.floor(cx2), Math.floor(cy2), 4, 4);
+        }
+      }
+
+      // ── SLEEP 💤 ── Z's float up, gentle purple glow dims the scene
+      if(activeAnim.id === 'sleep'){
+        // Dim the whole scene slightly
+        ctx.globalAlpha = fadeOut * 0.35;
+        ctx.fillStyle = '#0d0025';
+        ctx.fillRect(0, 0, W, H);
+        // Floating Z's
+        const zLetters = ['z','Z','z','Z','Z'];
+        for(let i=0;i<5;i++){
+          const seed = i*40;
+          const lifeT = ((af*0.7 + seed*2) % 80) / 80;
+          const zx = cx + Math.sin(seed+af*0.01)*sw*0.5 + (i-2)*12;
+          const zy = alienTop - lifeT*(H*0.55) + 10;
+          const zScale = 0.6 + lifeT*0.8;
+          ctx.globalAlpha = fadeOut * (1-lifeT) * 0.9;
+          ctx.font = `bold ${Math.floor(14*zScale)}px monospace`;
+          ctx.fillStyle = '#b06aff';
+          ctx.shadowBlur = 12; ctx.shadowColor = '#b06aff';
+          ctx.textAlign = 'center';
+          ctx.fillText(zLetters[i], zx, zy);
+          ctx.shadowBlur = 0;
+        }
+        // Moon glow
+        ctx.globalAlpha = fadeOut * 0.25;
+        const moonGlow = ctx.createRadialGradient(W*0.8, H*0.1, 0, W*0.8, H*0.1, 80);
+        moonGlow.addColorStop(0,'rgba(180,150,255,0.5)');
+        moonGlow.addColorStop(1,'transparent');
+        ctx.fillStyle = moonGlow;
+        ctx.fillRect(0,0,W,H);
+        ctx.globalAlpha = fadeOut;
+        ctx.font = '22px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🌙', W*0.8, H*0.12);
+        // "+ENERGY" text
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#b06aff';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#b06aff';
+        ctx.fillText('+ENERGY', cx, alienTop - 16 - progress*20);
+        ctx.shadowBlur = 0;
+      }
+
+      // ── MEDICINE 💊 ── green cross flashes, healing sparkles
+      if(activeAnim.id === 'medicine'){
+        // Green healing pulse expanding from alien
+        const pulseR = (af%50)/50 * 80;
+        ctx.globalAlpha = fadeOut * (1-(af%50)/50) * 0.5;
+        ctx.strokeStyle = '#3bffaa';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, alienTop+sh*0.5, pulseR, 0, Math.PI*2);
+        ctx.stroke();
+        // Plus/cross symbol floating up
+        const crossY = alienTop - 10 - progress*40;
+        ctx.globalAlpha = fadeOut * (0.6 + 0.4*Math.abs(Math.sin(af*0.15)));
+        ctx.fillStyle = '#3bffaa';
+        ctx.shadowBlur = 14; ctx.shadowColor = '#3bffaa';
+        ctx.fillRect(Math.floor(cx-2), Math.floor(crossY-8), 4, 16);
+        ctx.fillRect(Math.floor(cx-8), Math.floor(crossY-2), 16, 4);
+        ctx.shadowBlur = 0;
+        // Healing sparkles orbiting
+        for(let i=0;i<6;i++){
+          const angle = (i/6)*Math.PI*2 + af*0.08;
+          const orbR = 28 + Math.sin(af*0.1)*8;
+          const sx = cx + Math.cos(angle)*orbR;
+          const sy = alienTop+sh*0.5 + Math.sin(angle)*orbR*0.55;
+          ctx.globalAlpha = fadeOut * (0.5+0.5*Math.abs(Math.sin(af*0.12+i)));
+          ctx.fillStyle = '#3bffaa';
+          ctx.fillRect(Math.floor(sx), Math.floor(sy), 3, 3);
+        }
+        // "+HEALTH" text
+        ctx.globalAlpha = fadeOut;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillStyle = '#3bffaa';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#3bffaa';
+        ctx.textAlign = 'center';
+        ctx.fillText('+HEALTH', cx, alienTop - 20 - progress*18);
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Advance or expire
+      activeAnim.frame++;
+      if(activeAnim.frame >= activeAnim.duration) activeAnim = null;
+    }
+    // ═══ END CARE ANIMATIONS ═══
+
+    frame++;
+  }
+  draw();
+}
+
+function hexToRgb(hex){
+  const n = parseInt(hex.slice(1),16);
+  return [(n>>16)&255,(n>>8)&255,n&255];
+}
+
+/* ====================================================
+   CLOCK
+==================================================== */
+function startClock(){
+  if(CLK) clearInterval(CLK);
+  function tick(){
+    const n=new Date();
+    const el=document.getElementById('tbTime');
+    if(el) el.textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
+  }
+  tick(); CLK = setInterval(tick, 5000);
+}
+
+/* ====================================================
+   COUNTDOWN TICK — every second for live countdowns
+==================================================== */
+function startCDTick(){
+  if(CD_TICK) clearInterval(CD_TICK);
+  CD_TICK = setInterval(()=>{
+    updateActionBadges();
+    checkWarnBanner();
+    // decay tick every 30 updates (= 30 seconds)
+    if(Math.floor(Date.now()/1000) % 30 === 0) tickDecay();
+    // refresh speech every 5 min
+    if(Math.floor(Date.now()/1000) % 300 === 0) updateSpeechBubble();
+  }, 1000);
+}
+
+/* ====================================================
+   TOAST
+==================================================== */
+let toastTimer = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+/* ====================================================
+   RESET
+==================================================== */
+function confirmReset(){
+  if(confirm('Release your alien and start over?')) startOver();
+}
+
+/* ====================================================
+   ★ SPACE ACTIVITIES SYSTEM ★
+   6 canvas mini-games, each animated, each affecting
+   stats including hunger decay rate modifiers
+==================================================== */
+
+const SPACE_ACTIVITIES = [
+  {
+    id: 'star_fetch',
+    emoji: '⭐',
+    label: 'FETCH A STAR',
+    desc: 'Launch into orbit and snag a falling star!',
+    instr: 'TAP / CLICK to make your alien jump and catch stars!',
+    cooldownMs: 20 * 60 * 1000, // 20min cooldown
+    rewards: { happiness: 25, food: 10, energy: -8 },
+    hungerBoost: -0.3,  // reduces hunger decay rate by 30% for 1 hour
+    hungerBoostDuration: 60 * 60 * 1000,
+    color: '#ffe94a',
+    speechWin: ["Got it! That star tastes like stardust!", "CAUGHT IT! Did you see that?!", "Star secured! It's warm and delicious."],
+    speechLose: ["I dropped it... it flew away 😢", "Almost! Next time!", "The star escaped... for now."]
+  },
+  {
+    id: 'meteor_dodge',
+    emoji: '☄️',
+    label: 'METEOR DODGE',
+    desc: 'Dodge the meteors raining from above!',
+    instr: 'MOVE MOUSE / TAP to dodge incoming meteors!',
+    cooldownMs: 15 * 60 * 1000,
+    rewards: { happiness: 20, energy: -15, health: 5 },
+    hungerBoost: -0.2,
+    hungerBoostDuration: 45 * 60 * 1000,
+    color: '#ff8c42',
+    speechWin: ["DODGED EM ALL! I'm basically a ninja.", "Zero hits! I trained for this!", "Nothing can catch me in open space!"],
+    speechLose: ["Ow... meteors hurt.", "Got hit... but I survived!", "Space is DANGEROUS."]
+  },
+  {
+    id: 'nebula_swim',
+    emoji: '🌌',
+    label: 'NEBULA SWIM',
+    desc: 'Dive through a colorful nebula cloud!',
+    instr: 'Click glowing orbs before they fade — collect them all!',
+    cooldownMs: 25 * 60 * 1000,
+    rewards: { happiness: 30, water: 15, energy: 5 },
+    hungerBoost: -0.15,
+    hungerBoostDuration: 90 * 60 * 1000,
+    color: '#b06aff',
+    speechWin: ["The nebula is SO beautiful in person!", "I'm covered in cosmic dust! The good kind.", "Swimming through space feels amazing!"],
+    speechLose: ["The currents pulled me out...", "Couldn't reach all the orbs!", "The nebula was too thick..."]
+  },
+  {
+    id: 'planet_hop',
+    emoji: '🪐',
+    label: 'PLANET HOP',
+    desc: 'Leap between floating platforms in zero-G!',
+    instr: 'TAP / CLICK to jump — land on each planet!',
+    cooldownMs: 30 * 60 * 1000,
+    rewards: { happiness: 35, energy: -20, health: 8 },
+    hungerBoost: 0.4,   // this one makes them MORE hungry (exercise!)
+    hungerBoostDuration: 60 * 60 * 1000,
+    color: '#3bffaa',
+    speechWin: ["Visited every planet! My legs are tired.", "BEST. WORKOUT. EVER.", "Zero gravity parkour is my new hobby!"],
+    speechLose: ["Floated off into space again...", "Missed the last planet by INCHES.", "Platform jumping is harder than it looks."]
+  },
+  {
+    id: 'comet_surf',
+    emoji: '🏄',
+    label: 'COMET SURF',
+    desc: 'Ride a blazing comet across the cosmos!',
+    instr: 'Hold CLICK / HOLD TAP to surf, release to brake — stay on the comet!',
+    cooldownMs: 35 * 60 * 1000,
+    rewards: { happiness: 40, food: 5, energy: -12 },
+    hungerBoost: -0.25,
+    hungerBoostDuration: 75 * 60 * 1000,
+    color: '#3bc4ff',
+    speechWin: ["SURFING A COMET IS EVERYTHING.", "I could do that forever!", "The speed... the wind... the COSMOS!"],
+    speechLose: ["Wiped out... face first into space.", "The comet bucked me off!", "Comet surfing is HARD."]
+  },
+  {
+    id: 'blackhole_spin',
+    emoji: '🕳️',
+    label: 'VOID SPIN',
+    desc: 'Orbit a black hole — collect energy wisps!',
+    instr: 'Click WISPS as they orbit — avoid the void center!',
+    cooldownMs: 40 * 60 * 1000,
+    rewards: { happiness: 35, energy: 25, health: -5 },
+    hungerBoost: -0.35,
+    hungerBoostDuration: 120 * 60 * 1000,
+    color: '#ff2fff',
+    speechWin: ["I stared into the void... it blinked first.", "VOID POWER ABSORBED.", "Black holes are terrifying and beautiful."],
+    speechLose: ["Got too close... barely escaped!", "The void almost got me...", "I need to stay further from the edge."]
+  }
+];
+
+// Active hunger rate modifier (from completed activities)
+let hungerModifier = { multiplier: 1.0, expiresAt: 0 };
+
+function updateHungerBuffDisplay() {
+  const el = document.getElementById('hungerBuff');
+  if (!el) return;
+  const now = Date.now();
+  if (hungerModifier.expiresAt > now && hungerModifier.multiplier !== 1.0) {
+    const mins = Math.ceil((hungerModifier.expiresAt - now) / 60000);
+    const isReduced = hungerModifier.multiplier < 1.0;
+    const pct = Math.round(Math.abs(1 - hungerModifier.multiplier) * 100);
+    el.style.display = '';
+    el.textContent = isReduced
+      ? `🍗 HUNGER -${pct}% for ${mins}m`
+      : `🍗 HUNGER +${pct}% (exercised!) ${mins}m`;
+    el.style.color = isReduced ? 'var(--green)' : 'var(--orange)';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// Current open activity
+let currentActivity = null;
+let actRAF = null;
+let actState = null; // game-specific state object
+
+/* ---- Build activities list ---- */
+function buildActivitiesList() {
+  const list = document.getElementById('activitiesList');
+  if (!list) return;
+  list.innerHTML = '';
+  SPACE_ACTIVITIES.forEach(act => {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn';
+    btn.id = `spa-${act.id}`;
+    btn.onclick = () => openActivity(act.id);
+    btn.style.borderLeft = `3px solid ${act.color}`;
+    btn.innerHTML = `
+      <div class="act-emoji">${act.emoji}</div>
+      <div class="act-info">
+        <div class="act-label" style="color:${act.color}">${act.label}</div>
+        <div class="act-status ready" id="spa-s-${act.id}">READY</div>
+      </div>`;
+    list.appendChild(btn);
+  });
+}
+
+function updateActivityBadges() {
+  if (!G) return;
+  const now = Date.now();
+  SPACE_ACTIVITIES.forEach(act => {
+    const lastKey = `lastActivity_${act.id}`;
+    const elapsed = now - (G.alien[lastKey] || 0);
+    const remaining = act.cooldownMs - elapsed;
+    const btn = document.getElementById(`spa-${act.id}`);
+    const statusEl = document.getElementById(`spa-s-${act.id}`);
+    if (!btn || !statusEl) return;
+    if (remaining > 0) {
+      btn.classList.add('cooldown');
+      statusEl.className = 'act-status ticking';
+      statusEl.textContent = fmtTime(remaining);
+    } else {
+      btn.classList.remove('cooldown');
+      statusEl.className = 'act-status ready';
+      statusEl.textContent = 'READY ★';
+    }
+  });
+}
+
+/* ---- Open an activity ---- */
+function openActivity(id) {
+  if (!G || G.alien.dead) return;
+  const act = SPACE_ACTIVITIES.find(a => a.id === id);
+  if (!act) return;
+  const lastKey = `lastActivity_${act.id}`;
+  if (G.alien[lastKey] && Date.now() - G.alien[lastKey] < act.cooldownMs) {
+    toast(`${act.emoji} Need to rest first!`); return;
+  }
+
+  currentActivity = act;
+  document.getElementById('actTitle').textContent = `${act.emoji}  ${act.label}`;
+  document.getElementById('actInstr').textContent = act.instr;
+  document.getElementById('actScore').textContent = '';
+  document.getElementById('actRewards').textContent = '';
+  document.getElementById('actStartBtn').textContent = 'START ▶';
+  document.getElementById('actStartBtn').disabled = false;
+  document.getElementById('activityOverlay').style.display = 'flex';
+
+  // init the game canvas
+  const c = document.getElementById('actCanvas');
+  c.width = Math.min(320, window.innerWidth - 48);
+  c.height = Math.round(c.width * 0.75);
+  actState = null;
+  drawActivityIdle(act, c);
+
+  // bind pointer events for during-game
+  c.onmousedown = (e) => actPointerDown(e.offsetX, e.offsetY);
+  c.ontouchstart = (e) => { e.preventDefault(); const t=e.touches[0]; const r=c.getBoundingClientRect(); actPointerDown(t.clientX-r.left, t.clientY-r.top); };
+  c.onmousemove = (e) => actPointerMove(e.offsetX, e.offsetY);
+  c.ontouchmove = (e) => { e.preventDefault(); const t=e.touches[0]; const r=c.getBoundingClientRect(); actPointerMove(t.clientX-r.left, t.clientY-r.top); };
+  c.onmouseup = () => actPointerUp();
+  c.ontouchend = () => actPointerUp();
+}
+
+function activityClose() {
+  if (actRAF) cancelAnimationFrame(actRAF);
+  actRAF = null; actState = null; currentActivity = null;
+  document.getElementById('activityOverlay').style.display = 'none';
+}
+
+/* ---- Idle preview draw ---- */
+function drawActivityIdle(act, c) {
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  // starfield bg
+  ctx.fillStyle = '#020210';
+  ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < 40; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${0.2+Math.random()*0.6})`;
+    ctx.fillRect(Math.random()*W, Math.random()*H, 1+(Math.random()>0.8?1:0), 1+(Math.random()>0.8?1:0));
+  }
+  // big icon
+  ctx.font = `${Math.floor(H*0.32)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(act.emoji, W/2, H/2);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
+
+/* ---- Start button / tap handler ---- */
+function activityAction() {
+  if (!currentActivity || !actState) {
+    startActivityGame(); // first press = start
+  } else {
+    actGameTap(); // mid-game tap
+  }
+}
+
+function startActivityGame() {
+  const act = currentActivity;
+  const c = document.getElementById('actCanvas');
+  document.getElementById('actStartBtn').textContent = 'TAP!';
+  document.getElementById('actScore').textContent = 'GO!';
+
+  // Init game state based on activity type
+  actState = buildActivityState(act, c.width, c.height);
+  runActivityLoop(act, c);
+}
+
+function actGameTap() {
+  if (!actState) return;
+  actState.tap = true;
+}
+
+function actPointerDown(x, y) {
+  if (!actState) return;
+  actState.tap = true;
+  actState.px = x; actState.py = y;
+  actState.held = true;
+}
+function actPointerMove(x, y) {
+  if (!actState) return;
+  actState.px = x; actState.py = y;
+}
+function actPointerUp() {
+  if (!actState) return;
+  actState.held = false;
+}
+
+/* ---- Game state builders ---- */
+function buildActivityState(act, W, H) {
+  const base = { W, H, frame: 0, tap: false, held: false, px: W/2, py: H/2,
+    score: 0, done: false, won: false, timer: 8 * 60, particles: [] };
+
+  if (act.id === 'star_fetch') {
+    return { ...base,
+      alienX: W/2, alienY: H*0.75, alienVY: 0,
+      stars: Array.from({length:5}, (_,i) => ({
+        x: 30 + (i * W/5) + Math.random()*30,
+        y: -20 - Math.random()*H*0.5,
+        vy: 1 + Math.random()*1.5,
+        caught: false, size: 8+Math.random()*6
+      })),
+      ground: H*0.85,
+      catchCount: 0, needed: 3
+    };
+  }
+  if (act.id === 'meteor_dodge') {
+    return { ...base,
+      alienX: W/2, alienY: H*0.78, speed: 4,
+      meteors: [], spawnTimer: 0, hitFlash: 0, hits: 0, maxHits: 3,
+      timer: 10 * 60
+    };
+  }
+  if (act.id === 'nebula_swim') {
+    return { ...base,
+      orbs: Array.from({length:8}, () => ({
+        x: 20+Math.random()*(W-40), y: 20+Math.random()*(H-60),
+        r: 12+Math.random()*10, lit: true,
+        fadeTimer: 80+Math.floor(Math.random()*120),
+        hue: Math.random()*360
+      })),
+      collected: 0, needed: 5, timer: 12*60
+    };
+  }
+  if (act.id === 'planet_hop') {
+    const platforms = Array.from({length:7}, (_, i) => ({
+      x: 20 + Math.random()*(W-80),
+      y: H*0.1 + i*(H*0.75/7),
+      w: 50+Math.random()*30, landed: false
+    }));
+    platforms[platforms.length-1].y = H*0.8;
+    return { ...base,
+      alienX: platforms[platforms.length-1].x+20,
+      alienY: platforms[platforms.length-1].y - 18,
+      alienVX: 0, alienVY: 0, onGround: true,
+      platforms, currentPlatform: platforms.length-1,
+      reached: 0, needed: 5
+    };
+  }
+  if (act.id === 'comet_surf') {
+    return { ...base,
+      cometX: -40, cometY: H*0.5, cometVX: 2.5,
+      alienOffY: 0, balance: 50, falling: false,
+      timer: 10*60, distance: 0
+    };
+  }
+  if (act.id === 'blackhole_spin') {
+    const cx = W/2, cy = H/2;
+    return { ...base,
+      cx, cy, angle: 0,
+      wisps: Array.from({length:6}, (_, i) => ({
+        angle: (i/6)*Math.PI*2,
+        r: 60+Math.random()*40,
+        collected: false, size: 10, alpha: 1
+      })),
+      collected: 0, needed: 5,
+      dangerR: 35, deathR: 22,
+      playerAngle: Math.PI, playerR: 90,
+      timer: 12*60
+    };
+  }
+  return base;
+}
+
+/* ---- Main activity render loop ---- */
+function runActivityLoop(act, c) {
+  if (actRAF) cancelAnimationFrame(actRAF);
+  function loop() {
+    if (!actState || actState.done) return;
+    actRAF = requestAnimationFrame(loop);
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    updateActivity(act, actState, ctx);
+    drawActivity(act, actState, ctx);
+    actState.frame++;
+    if (actState.tap) actState.tap = false; // consume tap
+  }
+  loop();
+}
+
+/* ---- Per-game UPDATE logic ---- */
+function updateActivity(act, s, ctx) {
+  const W = s.W, H = s.H;
+  s.timer = Math.max(0, s.timer - 1);
+
+  // ── STAR FETCH ──
+  if (act.id === 'star_fetch') {
+    // alien jump on tap
+    if (s.tap && s.alienY >= s.ground - 2) s.alienVY = -9;
+    s.alienVY += 0.45; // gravity
+    s.alienY = Math.min(s.ground, s.alienY + s.alienVY);
+    // move stars down
+    s.stars.forEach(st => {
+      if (st.caught) return;
+      st.y += st.vy;
+      // catch check
+      const dx = s.alienX - st.x, dy = s.alienY - st.y;
+      if (!st.caught && Math.sqrt(dx*dx+dy*dy) < st.size + 14) {
+        st.caught = true; s.catchCount++;
+        spawnParticles(s, st.x, st.y, '#ffe94a', 12);
+      }
+      // reset star if missed
+      if (st.y > H + 20) {
+        st.y = -20 - Math.random()*80;
+        st.x = 20 + Math.random()*(W-40);
+        st.vy = 1 + Math.random()*2;
+      }
+    });
+    if (s.catchCount >= s.needed || s.timer === 0) endActivity(s.catchCount >= s.needed);
+  }
+
+  // ── METEOR DODGE ──
+  if (act.id === 'meteor_dodge') {
+    // alien follows mouse/touch x
+    s.alienX += (s.px - s.alienX) * 0.18;
+    s.alienX = Math.max(10, Math.min(W-10, s.alienX));
+    // spawn meteors
+    s.spawnTimer--;
+    if (s.spawnTimer <= 0) {
+      s.meteors.push({ x: 20+Math.random()*(W-40), y:-15, vx:(Math.random()-0.5)*2, vy:2+Math.random()*3, r:8+Math.random()*8 });
+      s.spawnTimer = 20 + Math.floor(Math.random()*20);
+    }
+    s.meteors.forEach(m => { m.x+=m.vx; m.y+=m.vy; });
+    s.meteors = s.meteors.filter(m => m.y < H+20);
+    // hit check
+    if (s.hitFlash > 0) s.hitFlash--;
+    s.meteors.forEach(m => {
+      const dx=s.alienX-m.x, dy=s.alienY-m.y;
+      if (Math.sqrt(dx*dx+dy*dy) < m.r+10 && s.hitFlash===0) {
+        s.hits++; s.hitFlash=30;
+        spawnParticles(s, s.alienX, s.alienY, '#ff3b5c', 8);
+        if (s.hits >= s.maxHits) endActivity(false);
+      }
+    });
+    s.score = Math.floor(s.frame / 60); // score = seconds survived
+    if (s.timer === 0) endActivity(true);
+  }
+
+  // ── NEBULA SWIM ──
+  if (act.id === 'nebula_swim') {
+    s.orbs.forEach(orb => {
+      if (!orb.lit) return;
+      orb.fadeTimer--;
+      if (orb.fadeTimer <= 0) { orb.lit = false; }
+      // collect on click proximity
+      if (s.tap || s.held) {
+        const dx=s.px-orb.x, dy=s.py-orb.y;
+        if (Math.sqrt(dx*dx+dy*dy) < orb.r+6) {
+          orb.lit = false; s.collected++;
+          spawnParticles(s, orb.x, orb.y, `hsl(${orb.hue},100%,70%)`, 10);
+        }
+      }
+    });
+    // respawn dead orbs
+    s.orbs.forEach(orb => {
+      if (!orb.lit && Math.random() < 0.005) {
+        orb.lit = true; orb.fadeTimer = 80+Math.floor(Math.random()*100);
+        orb.x=20+Math.random()*(W-40); orb.y=20+Math.random()*(s.H-60);
+        orb.hue=Math.random()*360;
+      }
+    });
+    if (s.collected >= s.needed || s.timer===0) endActivity(s.collected >= s.needed);
+  }
+
+  // ── PLANET HOP ──
+  if (act.id === 'planet_hop') {
+    // Jump on tap
+    if (s.tap && s.onGround) { s.alienVY = -10; s.alienVX = (Math.random()-0.5)*4; s.onGround=false; }
+    s.alienVY += 0.4;
+    s.alienX += s.alienVX; s.alienY += s.alienVY;
+    s.alienX = Math.max(8, Math.min(W-8, s.alienX));
+    s.onGround = false;
+    // platform landing
+    s.platforms.forEach((p, i) => {
+      if (s.alienY+12 >= p.y && s.alienY+12 <= p.y+14 && s.alienX >= p.x && s.alienX <= p.x+p.w && s.alienVY > 0) {
+        s.alienY = p.y - 12; s.alienVY = 0; s.alienVX *= 0.3; s.onGround = true;
+        if (!p.landed && i !== s.currentPlatform) { p.landed=true; s.reached++; spawnParticles(s,s.alienX,p.y,'#3bffaa',10); }
+        s.currentPlatform = i;
+      }
+    });
+    if (s.alienY > H+20) { s.alienY=-20; s.alienVY=0; s.alienX=W/2; } // fell off
+    if (s.reached >= s.needed || s.timer===0) endActivity(s.reached>=s.needed);
+  }
+
+  // ── COMET SURF ──
+  if (act.id === 'comet_surf') {
+    if (!s.falling) {
+      s.cometX += s.cometVX; s.cometVX = Math.min(5, s.cometVX + 0.01);
+      s.cometY = H*0.5 + Math.sin(s.frame*0.04)*H*0.25;
+      // balance: holding keeps balance, not holding loses it
+      if (s.held) { s.balance = Math.min(100, s.balance+1.5); }
+      else         { s.balance = Math.max(0,   s.balance-0.8); }
+      s.alienOffY = (50-s.balance)*0.6;
+      s.distance++;
+      if (s.balance <= 0) { s.falling=true; spawnParticles(s, s.cometX, s.cometY, '#ff8c42', 16); }
+      if (s.cometX > W+60 || s.timer===0) endActivity(s.distance > 200);
+    }
+  }
+
+  // ── BLACK HOLE SPIN ──
+  if (act.id === 'blackhole_spin') {
+    s.angle += 0.015;
+    // wisps orbit
+    s.wisps.forEach(w => { w.angle += 0.02; w.x = s.cx + Math.cos(w.angle)*w.r; w.y = s.cy + Math.sin(w.angle)*w.r; });
+    // player orbits with mouse influence
+    const targetAngle = Math.atan2(s.py - s.cy, s.px - s.cx);
+    s.playerAngle += 0.04;
+    s.playerX = s.cx + Math.cos(s.playerAngle)*s.playerR;
+    s.playerY = s.cy + Math.sin(s.playerAngle)*s.playerR;
+    // collect wisps on click
+    if (s.tap || s.held) {
+      s.wisps.forEach(w => {
+        if (w.collected) return;
+        const dx=s.playerX-w.x, dy=s.playerY-w.y;
+        if (Math.sqrt(dx*dx+dy*dy) < w.size+10) {
+          w.collected=true; s.collected++;
+          spawnParticles(s, w.x, w.y, '#ff2fff', 10);
+        }
+      });
+    }
+    if (s.collected >= s.needed || s.timer===0) endActivity(s.collected>=s.needed);
+  }
+
+  // Update particles
+  s.particles = s.particles.filter(p => p.life > 0);
+  s.particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.life--; });
+}
+
+/* ---- Per-game DRAW logic ---- */
+function drawActivity(act, s, ctx) {
+  const W=s.W, H=s.H;
+  // background
+  ctx.fillStyle='#020210'; ctx.fillRect(0,0,W,H);
+  // stars
+  for(let i=0;i<30;i++){
+    const sx=(Math.sin(i*7.3)*0.5+0.5)*W, sy=(Math.cos(i*3.7)*0.5+0.5)*H;
+    const tw=0.3+0.7*Math.abs(Math.sin(s.frame*0.02+i));
+    ctx.globalAlpha=tw*0.7; ctx.fillStyle='#fff';
+    ctx.fillRect(Math.floor(sx),Math.floor(sy),1,1);
+  }
+  ctx.globalAlpha=1;
+
+  // ── STAR FETCH draw ──
+  if(act.id==='star_fetch'){
+    // ground
+    ctx.fillStyle='#0a1a08'; ctx.fillRect(0,s.ground,W,H-s.ground);
+    // stars
+    s.stars.forEach(st=>{
+      if(st.caught) return;
+      ctx.save();
+      ctx.shadowBlur=12; ctx.shadowColor='#ffe94a';
+      ctx.fillStyle='#ffe94a';
+      drawPixelStar(ctx, st.x, st.y, st.size);
+      ctx.restore();
+    });
+    // alien
+    drawMiniAlien(ctx, s.alienX, s.alienY, 14);
+    // HUD
+    ctx.fillStyle='#ffe94a'; ctx.font='bold 11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(`STARS: ${s.catchCount} / ${s.needed}`, W/2, 16);
+    ctx.fillText(`${Math.ceil(s.timer/60)}s`, W/2, 30);
+    ctx.textAlign='left';
+  }
+
+  // ── METEOR DODGE draw ──
+  if(act.id==='meteor_dodge'){
+    if(s.hitFlash>0){ ctx.fillStyle=`rgba(255,59,92,${s.hitFlash/30*0.3})`; ctx.fillRect(0,0,W,H); }
+    s.meteors.forEach(m=>{
+      ctx.save(); ctx.shadowBlur=8; ctx.shadowColor='#ff8c42';
+      ctx.fillStyle='#ff6020';
+      ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#ffaa60'; ctx.beginPath(); ctx.arc(m.x-m.r*.3,m.y-m.r*.3,m.r*.35,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+    drawMiniAlien(ctx, s.alienX, s.alienY, 14);
+    // health dots
+    for(let i=0;i<s.maxHits;i++){
+      ctx.fillStyle = i < (s.maxHits-s.hits) ? '#3bffaa' : '#333';
+      ctx.fillRect(W-16-i*16, 8, 10, 10);
+    }
+    ctx.fillStyle='#aaa'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText(`${Math.ceil(s.timer/60)}s`, W/2, 16); ctx.textAlign='left';
+  }
+
+  // ── NEBULA SWIM draw ──
+  if(act.id==='nebula_swim'){
+    // nebula bg
+    for(let i=0;i<6;i++){
+      const nx=(Math.sin(i*2.1)*0.4+0.5)*W, ny=(Math.cos(i*1.7)*0.4+0.5)*H;
+      const gr=ctx.createRadialGradient(nx,ny,0,nx,ny,60+i*15);
+      gr.addColorStop(0,`hsla(${i*60},80%,50%,0.08)`); gr.addColorStop(1,'transparent');
+      ctx.fillStyle=gr; ctx.fillRect(0,0,W,H);
+    }
+    // orbs
+    s.orbs.forEach(orb=>{
+      if(!orb.lit) return;
+      const fade=Math.min(1, orb.fadeTimer/30);
+      ctx.save(); ctx.globalAlpha=fade;
+      ctx.shadowBlur=18; ctx.shadowColor=`hsl(${orb.hue},100%,70%)`;
+      ctx.fillStyle=`hsl(${orb.hue},100%,75%)`;
+      ctx.beginPath(); ctx.arc(orb.x,orb.y,orb.r,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.6)';
+      ctx.beginPath(); ctx.arc(orb.x-orb.r*.3,orb.y-orb.r*.3,orb.r*.3,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+    // cursor glow
+    ctx.save(); ctx.globalAlpha=0.4; ctx.shadowBlur=20; ctx.shadowColor='#fff';
+    ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.beginPath(); ctx.arc(s.px,s.py,16,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle='#b06aff'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText(`ORB ${s.collected}/${s.needed}  ${Math.ceil(s.timer/60)}s`,W/2,16); ctx.textAlign='left';
+  }
+
+  // ── PLANET HOP draw ──
+  if(act.id==='planet_hop'){
+    s.platforms.forEach((p,i)=>{
+      const col = p.landed ? '#3bffaa' : (i===s.currentPlatform?'#ffe94a':'#2a4a3a');
+      ctx.fillStyle=col; ctx.fillRect(p.x,p.y,p.w,8);
+      ctx.fillStyle='rgba(59,255,170,0.15)'; ctx.fillRect(p.x,p.y,p.w,2);
+      // planet sphere
+      const pc=ctx.createRadialGradient(p.x+p.w/2,p.y+4,2,p.x+p.w/2,p.y+4,p.w/2);
+      pc.addColorStop(0,col); pc.addColorStop(1,'transparent');
+      ctx.fillStyle=pc; ctx.beginPath(); ctx.ellipse(p.x+p.w/2,p.y+4,p.w/2,12,0,0,Math.PI*2); ctx.fill();
+    });
+    drawMiniAlien(ctx, s.alienX, s.alienY, 13);
+    ctx.fillStyle='#3bffaa'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText(`PLANETS: ${s.reached}/${s.needed}  ${Math.ceil(s.timer/60)}s`,W/2,16); ctx.textAlign='left';
+  }
+
+  // ── COMET SURF draw ──
+  if(act.id==='comet_surf'){
+    if(s.cometX>-30&&s.cometX<W+50){
+      // comet trail
+      for(let i=8;i>0;i--){
+        const tx=s.cometX-i*12, alpha=i/8*.5;
+        ctx.globalAlpha=alpha; ctx.fillStyle='#ff8c42';
+        ctx.beginPath(); ctx.ellipse(tx,s.cometY,14,6,0,0,Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha=1;
+      // comet head
+      ctx.save(); ctx.shadowBlur=20; ctx.shadowColor='#ffcc44';
+      ctx.fillStyle='#ffe060';
+      ctx.beginPath(); ctx.arc(s.cometX,s.cometY,14,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.5)';
+      ctx.beginPath(); ctx.arc(s.cometX-5,s.cometY-5,4,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      // alien on comet
+      if(!s.falling) drawMiniAlien(ctx, s.cometX, s.cometY-16+s.alienOffY, 12);
+    }
+    // balance bar
+    const bx=10, by=H-20, bw=W-20, bh=8;
+    ctx.fillStyle='#111'; ctx.fillRect(bx,by,bw,bh);
+    const bc=s.balance>60?'#3bffaa':s.balance>30?'#ffe94a':'#ff3b5c';
+    ctx.fillStyle=bc; ctx.fillRect(bx,by,bw*(s.balance/100),bh);
+    ctx.strokeStyle='#333'; ctx.strokeRect(bx,by,bw,bh);
+    ctx.fillStyle='#aaa'; ctx.font='9px monospace'; ctx.textAlign='left';
+    ctx.fillText(`BALANCE`,bx,by-3);
+    ctx.textAlign='center'; ctx.fillText(`${Math.ceil(s.timer/60)}s`,W/2,16); ctx.textAlign='left';
+  }
+
+  // ── BLACK HOLE SPIN draw ──
+  if(act.id==='blackhole_spin'){
+    // void rings
+    for(let r=s.deathR+60;r>s.deathR;r-=8){
+      const alpha=0.04+0.04*(Math.sin(s.frame*.05+r*.1));
+      ctx.strokeStyle=`rgba(180,0,255,${alpha})`;
+      ctx.lineWidth=2; ctx.beginPath(); ctx.arc(s.cx,s.cy,r,0,Math.PI*2); ctx.stroke();
+    }
+    // danger zone
+    const dg=ctx.createRadialGradient(s.cx,s.cy,s.deathR*0.3,s.cx,s.cy,s.dangerR+10);
+    dg.addColorStop(0,'rgba(80,0,120,.9)'); dg.addColorStop(1,'transparent');
+    ctx.fillStyle=dg; ctx.beginPath(); ctx.arc(s.cx,s.cy,s.dangerR+10,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#0a000f'; ctx.beginPath(); ctx.arc(s.cx,s.cy,s.deathR,0,Math.PI*2); ctx.fill();
+    // wisps
+    s.wisps.forEach(w=>{
+      if(w.collected) return;
+      const pulse=0.6+0.4*Math.sin(s.frame*.1+w.angle);
+      ctx.save(); ctx.globalAlpha=pulse; ctx.shadowBlur=16; ctx.shadowColor='#ff2fff';
+      ctx.fillStyle='#ff80ff';
+      ctx.beginPath(); ctx.arc(w.x,w.y,w.size,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.6)';
+      ctx.beginPath(); ctx.arc(w.x-3,w.y-3,3,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    });
+    // player
+    if(!s.playerX) s.playerX=s.cx+s.playerR; if(!s.playerY) s.playerY=s.cy;
+    drawMiniAlien(ctx, s.playerX, s.playerY, 12);
+    ctx.fillStyle='#ff2fff'; ctx.font='11px monospace'; ctx.textAlign='center';
+    ctx.fillText(`WISPS: ${s.collected}/${s.needed}  ${Math.ceil(s.timer/60)}s`,W/2,16); ctx.textAlign='left';
+  }
+
+  // Particles
+  s.particles.forEach(p=>{
+    ctx.globalAlpha=p.life/20;
+    ctx.fillStyle=p.color;
+    ctx.fillRect(Math.floor(p.x),Math.floor(p.y),3,3);
+  });
+  ctx.globalAlpha=1;
+
+  // Score overlay
+  document.getElementById('actScore').textContent =
+    act.id==='star_fetch'  ? `⭐ ${s.catchCount} / ${s.needed}` :
+    act.id==='meteor_dodge'? `💥 ${s.hits} hits  ⏱ ${Math.ceil(s.timer/60)}s` :
+    act.id==='nebula_swim' ? `🔮 ${s.collected} / ${s.needed}` :
+    act.id==='planet_hop'  ? `🪐 ${s.reached} / ${s.needed}` :
+    act.id==='comet_surf'  ? `🏄 Balance ${Math.floor(s.balance)}%  ${Math.ceil(s.timer/60)}s` :
+    act.id==='blackhole_spin'?`🌀 ${s.collected} / ${s.needed}` : '';
+}
+
+/* ---- Draw helpers ---- */
+function drawMiniAlien(ctx, x, y, size) {
+  if (!G) return;
+  const col = SPECIES[G.alien.speciesId].color;
+  // body
+  ctx.save(); ctx.shadowBlur=10; ctx.shadowColor=col;
+  ctx.fillStyle=col;
+  ctx.fillRect(Math.floor(x-size/2), Math.floor(y-size), size, size);
+  // eyes
+  ctx.fillStyle='#000';
+  ctx.fillRect(Math.floor(x-size*.25), Math.floor(y-size*.7), Math.floor(size*.18), Math.floor(size*.18));
+  ctx.fillRect(Math.floor(x+size*.08), Math.floor(y-size*.7), Math.floor(size*.18), Math.floor(size*.18));
+  ctx.fillStyle='#fff';
+  ctx.fillRect(Math.floor(x-size*.22), Math.floor(y-size*.72), Math.floor(size*.08), Math.floor(size*.08));
+  ctx.fillRect(Math.floor(x+size*.10), Math.floor(y-size*.72), Math.floor(size*.08), Math.floor(size*.08));
+  ctx.restore();
+}
+
+function drawPixelStar(ctx, x, y, size) {
+  ctx.fillRect(Math.floor(x-size/2), Math.floor(y-1), size, 3);
+  ctx.fillRect(Math.floor(x-1), Math.floor(y-size/2), 3, size);
+  ctx.fillRect(Math.floor(x-size*.35), Math.floor(y-size*.35), 3, 3);
+  ctx.fillRect(Math.floor(x+size*.3), Math.floor(y-size*.35), 3, 3);
+  ctx.fillRect(Math.floor(x-size*.35), Math.floor(y+size*.25), 3, 3);
+  ctx.fillRect(Math.floor(x+size*.3), Math.floor(y+size*.25), 3, 3);
+}
+
+function spawnParticles(s, x, y, color, count) {
+  for (let i=0; i<count; i++) {
+    s.particles.push({
+      x, y,
+      vx: (Math.random()-0.5)*5,
+      vy: -Math.random()*5,
+      color, life: 15+Math.floor(Math.random()*10)
+    });
+  }
+}
+
+/* ---- End activity ---- */
+function endActivity(won) {
+  if (!actState || actState.done) return;
+  actState.done = true;
+  if (actRAF) cancelAnimationFrame(actRAF);
+
+  const act = currentActivity;
+  const alien = G.alien;
+  const lastKey = `lastActivity_${act.id}`;
+  alien[lastKey] = Date.now();
+
+  let rewardText = '';
+  if (won) {
+    // Apply stat rewards
+    for (const [stat, val] of Object.entries(act.rewards)) {
+      alien.stats[stat] = Math.max(0, Math.min(100, (alien.stats[stat]||0) + val));
+    }
+    alien.careScore = (alien.careScore||0) + 2;
+
+    // Apply hunger modifier
+    const newMult = 1 + act.hungerBoost; // e.g. 0.7 or 1.4
+    hungerModifier = {
+      multiplier: newMult,
+      expiresAt: Date.now() + act.hungerBoostDuration
+    };
+    updateHungerBuffDisplay();
+    const modDesc = act.hungerBoost < 0
+      ? `🍗 Hunger slows ${Math.round(-act.hungerBoost*100)}% for ${Math.round(act.hungerBoostDuration/60000)}min!`
+      : `🍗 Hunger +${Math.round(act.hungerBoost*100)}% (exercise!) for ${Math.round(act.hungerBoostDuration/60000)}min!`;
+
+    const speech = act.speechWin[Math.floor(Math.random()*act.speechWin.length)];
+    setSpeech(speech);
+
+    const statLines = Object.entries(act.rewards)
+      .filter(([,v])=>v>0)
+      .map(([k,v])=>`+${v} ${k.toUpperCase()}`).join('  ');
+    rewardText = `${statLines}\n${modDesc}`;
+    toast(`${act.emoji} GREAT JOB! ${statLines}`);
+  } else {
+    const half = {};
+    for (const [stat, val] of Object.entries(act.rewards)) {
+      if (val > 0) { half[stat] = Math.floor(val/2); alien.stats[stat] = Math.min(100,(alien.stats[stat]||0)+half[stat]); }
+    }
+    const speech = act.speechLose[Math.floor(Math.random()*act.speechLose.length)];
+    setSpeech(speech);
+    rewardText = 'Almost! Half rewards earned.';
+    toast(`${act.emoji} Good try! Half rewards.`);
+  }
+
+  document.getElementById('actScore').textContent = won ? '★ SUCCESS! ★' : '✗ TRY AGAIN';
+  document.getElementById('actRewards').textContent = rewardText.split('\n')[0];
+  document.getElementById('actStartBtn').textContent = 'PLAY AGAIN';
+  document.getElementById('actStartBtn').disabled = false;
+  actState = null; // reset so next press re-starts
+
+  updateStatsDisplay();
+  updateActionBadges();
+  updateActivityBadges();
+  save();
+}
+
+/* ---- Wire hunger modifier into tickDecay ---- */
+// Patch tickDecay to check modifier
+const _origTickDecay = tickDecay;
+// Override tickDecay to include hunger rate modifier
+function tickDecay() {
+  if (!G || G.alien.dead) return;
+  const {alien} = G;
+  const sp = SPECIES[alien.speciesId];
+  const decay = sp.decay;
+  const hrs = 30/3600;
+
+  // Apply hunger modifier if active
+  const now = Date.now();
+  if (now > hungerModifier.expiresAt) hungerModifier = { multiplier: 1.0, expiresAt: 0 };
+  const foodMult = hungerModifier.multiplier;
+  updateHungerBuffDisplay();
+
+  alien.stats.food      = Math.max(0, alien.stats.food      - decay.food * foodMult * hrs);
+  alien.stats.water     = Math.max(0, alien.stats.water     - decay.water     * hrs);
+  alien.stats.energy    = Math.max(0, alien.stats.energy    - decay.energy    * hrs);
+  alien.stats.hygiene   = Math.max(0, alien.stats.hygiene   - decay.hygiene   * hrs);
+  alien.stats.happiness = Math.max(0, alien.stats.happiness - decay.happiness * hrs);
+  alien.stats.bathroom  = Math.max(0, alien.stats.bathroom  - decay.bathroom  * hrs);
+
+  let hDrain = 0;
+  if (alien.stats.food    === 0) hDrain += 8 * hrs;
+  if (alien.stats.water   === 0) hDrain += 6 * hrs;
+  if (alien.stats.bathroom=== 0) hDrain += 4 * hrs;
+  alien.stats.health = Math.max(0, alien.stats.health - decay.health * hrs - hDrain);
+
+  checkDeath();
+  updateStatsDisplay();
+  updateActionBadges();
+  updateActivityBadges();
+  checkEvolution();
+  save();
+}
+
+/* ---- Wire into switchToGame ---- */
+const _origBuildActionsList = buildActionsList;
+buildActionsList = function() {
+  _origBuildActionsList();
+  buildActivitiesList();
+};
+
+/* ---- Wire into updateActionBadges ticks ---- */
+const _origStartCDTick = startCDTick;
+startCDTick = function() {
+  if (CD_TICK) clearInterval(CD_TICK);
+  CD_TICK = setInterval(() => {
+    updateActionBadges();
+    updateActivityBadges();
+    checkWarnBanner();
+    if (Math.floor(Date.now()/1000) % 30 === 0) tickDecay();
+    if (Math.floor(Date.now()/1000) % 300 === 0) updateSpeechBubble();
+  }, 1000);
+};
+
+/* ====================================================
+   INIT
+==================================================== */
+buildSelection();
+const saved = load();
+if(saved && saved.alien && !saved.alien.dead){
+  G = saved;
+  // must happen after DOM ready
+  switchToGame();
+} else if(saved && saved.alien && saved.alien.dead){
+  G = saved;
+  switchToGame();
+  showDead();
+}
+</script>
+</body>
+</html>

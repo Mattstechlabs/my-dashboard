@@ -1,0 +1,2476 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* ══════════════════════════════════════════════
+           CSS CUSTOM PROPERTIES — LIGHT MODE (default)
+        ══════════════════════════════════════════════ */
+        :root {
+            --accent:        {{ theme_color }};
+            --bg-page:       linear-gradient(135deg, {{ bg_color }} 0%, {{ bg_color }}dd 100%);
+            --bg-card:       linear-gradient(145deg, #ffffff, #fff0e0);
+            --bg-card-alt:   linear-gradient(145deg, #ffffff, #fff8f0);
+            --bg-inset:      rgba(255,140,66,0.05);
+            --bg-input:      rgba(255,140,66,0.05);
+            --border-card:   rgba(255,140,66,0.12);
+            --border-input:  rgba(255,140,66,0.25);
+            --shadow-card:   12px 12px 24px rgba(255,140,66,0.15), -12px -12px 24px rgba(255,255,255,0.9);
+            --text-primary:  #222;
+            --text-secondary:#555;
+            --text-muted:    #999;
+            --text-heading:  {{ theme_color }};
+            --feed-card-bg:  #ffffff;
+            --feed-card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --feed-card-shadow-hover: 0 6px 20px rgba(0,0,0,0.13);
+            --divider:       rgba(0,0,0,0.06);
+            --ticker-bg:     {{ theme_color }};
+            --map-border:    rgba(255,140,66,0.12);
+            --transition:    background 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        /* ══════════════════════════════════════════════
+           DARK MODE overrides
+        ══════════════════════════════════════════════ */
+        body.dark {
+            --bg-page:       linear-gradient(135deg, #0d0a08 0%, #1a1008 100%);
+            --bg-card:       linear-gradient(145deg, #1c1610, #131008);
+            --bg-card-alt:   linear-gradient(145deg, #1c1610, #131008);
+            --bg-inset:      rgba(255,140,66,0.06);
+            --bg-input:      rgba(255,140,66,0.06);
+            --border-card:   rgba(255,140,66,0.18);
+            --border-input:  rgba(255,140,66,0.25);
+            --shadow-card:   12px 12px 28px rgba(0,0,0,0.55), -4px -4px 16px rgba(255,140,66,0.04);
+            --text-primary:  #f0dfc0;
+            --text-secondary:#aa9980;
+            --text-muted:    #665544;
+            --text-heading:  #ff9933;
+            --feed-card-bg:  #1c1610;
+            --feed-card-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            --feed-card-shadow-hover: 0 8px 28px rgba(0,0,0,0.55);
+            --divider:       rgba(255,140,66,0.08);
+            --map-border:    rgba(255,140,66,0.18);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-page);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            margin-top: 45px;
+            transition: var(--transition);
+        }
+
+        /* ── NEWS TICKER ── */
+        .news-ticker {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            background: var(--ticker-bg);
+            color: white;
+            padding: 10px 0;
+            overflow: hidden;
+            z-index: 999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+            transition: background 0.35s ease;
+        }
+        .news-ticker-content {
+            display: flex;
+            animation: scroll-left 50s linear infinite;
+            white-space: nowrap;
+        }
+        .news-ticker-item {
+            padding: 0 50px;
+            font-size: 1em;
+            display: inline-flex;
+            align-items: center;
+        }
+        .news-ticker-item::before { content: "📰"; margin-right: 10px; }
+        @keyframes scroll-left {
+            0%   { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* ── FLOATING BUTTONS ── */
+        .settings-btn {
+            position: fixed;
+            bottom: 20px; left: 20px;
+            padding: 12px 24px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.25);
+            z-index: 1000;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .settings-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 7px 7px 20px rgba(0,0,0,0.35);
+        }
+
+        /* ── DARK MODE TOGGLE ── */
+        #theme-toggle {
+            position: fixed;
+            bottom: 20px; left: 180px;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            background: var(--bg-card);
+            border: 2px solid var(--border-card);
+            border-radius: 20px;
+            padding: 4px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .toggle-option {
+            padding: 8px 16px;
+            border-radius: 14px;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+            color: var(--text-muted);
+            user-select: none;
+            white-space: nowrap;
+        }
+        .toggle-option.active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        body.dark #theme-toggle {
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5), 0 0 12px rgba(255,140,66,0.08);
+        }
+        body.dark .toggle-option.active {
+            background: #ff8800;
+            box-shadow: 0 0 12px rgba(255,136,0,0.35);
+        }
+
+        /* ── HEADER ── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto 40px auto;
+        }
+        h1 { color: var(--text-heading); font-size: 3em; margin: 0; transition: color 0.35s; }
+        .date-time { text-align: right; color: var(--text-heading); transition: color 0.35s; }
+        .date-time .time { font-size: 2em; font-weight: bold; margin-bottom: 5px; }
+        .date-time .date { font-size: 1.2em; }
+
+        /* ── LAYOUT ── */
+        .stats-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .three-column-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+        @media (max-width: 900px) { .three-column-row { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .three-column-row { grid-template-columns: 1fr; } }
+
+        /* ── CARDS ── */
+        .weather-box,
+        .stat-box,
+        .reddit-stat-box,
+        .social-feed-box-scroll {
+            background: var(--bg-card);
+            border: 2px solid var(--border-card);
+            box-shadow: var(--shadow-card);
+            border-radius: 30px;
+            transition: var(--transition), transform 0.3s;
+        }
+        .weather-box {
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .weather-box:hover { transform: none; } /* disable box lift on weather — forecast strip handles hover */
+        .weather-box:hover,
+        .stat-box:hover,
+        .reddit-stat-box:hover { transform: translateY(-5px); }
+
+        .stat-box, .reddit-stat-box { padding: 30px; }
+        .stat-box h2, .reddit-stat-box h2, .weather-info h2, .social-feed-box-scroll h2 {
+            color: var(--text-heading);
+            margin-top: 0;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            transition: color 0.35s;
+        }
+        .stat-box p {
+            color: var(--text-primary);
+            font-size: 1.1em;
+            margin: 10px 0;
+            padding: 8px;
+            background: var(--bg-inset);
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+        .stat-box strong { color: var(--text-heading); transition: color 0.35s; }
+        .weather-icon { font-size: 8em; min-width: 150px; text-align: center; }
+        .weather-info { flex: 1; }
+        .weather-temp { font-size: 3em; color: var(--text-heading); font-weight: bold; margin: 10px 0; transition: color 0.35s; }
+        .weather-details { display: flex; gap: 30px; flex-wrap: wrap; }
+        .weather-detail {
+            background: var(--bg-inset);
+            padding: 10px 20px;
+            border-radius: 15px;
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        /* ── 7-DAY FORECAST STRIP ── */
+        .forecast-divider {
+            width: 2px;
+            background: var(--border-card);
+            border-radius: 2px;
+            align-self: stretch;
+            margin: 0 8px;
+            flex-shrink: 0;
+            transition: background 0.35s;
+        }
+        .forecast-strip {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+            flex: 1;
+            min-width: 0;
+        }
+        .forecast-day {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            background: var(--bg-inset);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 12px 6px;
+            min-width: 0;
+            transition: var(--transition), transform 0.2s;
+            cursor: default;
+        }
+        .forecast-day:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+            box-shadow: 0 6px 18px rgba(255,140,66,0.15);
+        }
+        .forecast-day-name {
+            font-size: 0.65em;
+            font-weight: bold;
+            color: var(--text-heading);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: color 0.35s;
+        }
+        .forecast-icon { font-size: 1.6em; line-height: 1; }
+        .forecast-high {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: var(--text-primary);
+            transition: color 0.35s;
+        }
+        .forecast-low {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            transition: color 0.35s;
+        }
+        .forecast-rain {
+            font-size: 0.6em;
+            color: #5599ff;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        /* ── ERRORS ── */
+        .error { color: #ff4444; background: rgba(255,68,68,0.1); padding: 15px; border-radius: 15px; }
+
+        /* ── CALENDAR ── */
+        .calendar-events { max-height: 350px; overflow-y: auto; }
+        .calendar-event {
+            background: var(--bg-inset);
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent);
+            transition: var(--transition);
+        }
+        .event-title { font-weight: bold; color: var(--text-primary); margin: 0 0 5px 0; transition: color 0.35s; }
+        .event-time  { font-size: 0.9em; color: var(--text-secondary); margin: 0 0 5px 0; transition: color 0.35s; }
+        .event-location { font-size: 0.85em; color: var(--text-muted); margin: 0; transition: color 0.35s; }
+
+        /* ── MAPS ── */
+        .map-wrapper { width: 100%; }
+        .map-search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-input);
+            border-radius: 10px;
+            font-size: 1em;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            transition: var(--transition);
+        }
+        .map-search-input:focus { outline: none; border-color: var(--accent); }
+        body.dark .map-search-input { color: #f0dfc0; }
+        #map {
+            height: 400px; width: 100%;
+            border-radius: 15px;
+            border: 2px solid var(--map-border);
+            transition: border-color 0.35s;
+        }
+
+        /* ── CONNECT BUTTONS ── */
+        .connect-bank-btn {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white; border: none;
+            padding: 15px 30px; border-radius: 15px;
+            font-size: 1em; font-weight: bold; cursor: pointer;
+            box-shadow: 5px 5px 15px rgba(76,175,80,0.3);
+            transition: all 0.3s; text-decoration: none; display: inline-block;
+        }
+        .connect-bank-btn:hover { transform: translateY(-2px); box-shadow: 7px 7px 20px rgba(76,175,80,0.4); }
+
+        /* ── SOCIAL FEED ── */
+        .social-feed-box-scroll { padding: 30px; width: 100%; box-sizing: border-box; }
+        .feed-scroll-container {
+            max-height: 800px;
+            overflow-y: scroll; overflow-x: hidden;
+            padding-right: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--bg-inset);
+        }
+        .feed-scroll-container::-webkit-scrollbar { width: 8px; }
+        .feed-scroll-container::-webkit-scrollbar-track { background: var(--bg-inset); border-radius: 10px; }
+        .feed-scroll-container::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        .feed-card {
+            background: var(--feed-card-bg);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: var(--feed-card-shadow);
+            transition: var(--transition), transform 0.3s;
+            border: 1px solid var(--border-card);
+        }
+        .feed-card:hover { box-shadow: var(--feed-card-shadow-hover); transform: translateY(-2px); }
+        .feed-card-header { display: flex; align-items: center; padding: 15px; gap: 10px; }
+        .platform-icon {
+            font-size: 1.2em; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg,#ff0000,#cc0000);
+            border-radius: 50%;
+        }
+        .instagram-icon { background: linear-gradient(45deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888); }
+        .reddit-icon    { background: linear-gradient(135deg,#ff4500,#cc3700); }
+        .feed-card-meta { flex: 1; display: flex; flex-direction: column; }
+        .platform-name { font-weight: bold; color: var(--text-primary); font-size: 1em; transition: color 0.35s; }
+        .channel-name  { color: var(--text-secondary); font-size: 0.85em; transition: color 0.35s; }
+        .time-ago      { color: var(--text-muted);     font-size: 0.85em; transition: color 0.35s; }
+        .feed-card-link { display: block; text-decoration: none; }
+        .feed-card-image { width: 100%; display: block; max-height: 500px; object-fit: cover; }
+
+        .video-container { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; overflow: hidden; }
+        .video-container iframe { position: absolute; top:0; left:0; width:100%; height:100%; border:none; }
+
+        .feed-card-content { padding: 15px; }
+        .feed-card-actions { display: flex; gap: 15px; margin-bottom: 10px; }
+        .action-icon { font-size: 1.5em; cursor: pointer; transition: transform 0.2s; }
+        .action-icon:hover { transform: scale(1.2); }
+        .feed-card-likes   { font-weight: bold; color: var(--text-primary); margin: 5px 0; transition: color 0.35s; }
+        .feed-card-caption { color: var(--text-primary); line-height: 1.5; margin: 10px 0 0 0; transition: color 0.35s; }
+        .feed-card-title   { font-weight: bold; color: var(--text-primary); line-height: 1.4; margin: 0; transition: color 0.35s; }
+        .feed-card-divider { height: 1px; background: var(--divider); margin: 0 15px; transition: background 0.35s; }
+        .feed-empty        { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+
+        /* Reddit feed */
+        .reddit-meta { display: flex; gap: 15px; font-size: 0.85em; color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap; transition: color 0.35s; }
+        .reddit-score { color: #ff4500; font-weight: bold; }
+        .reddit-thumbnail { width: 100%; max-height: 350px; object-fit: cover; display: block; }
+        .reddit-link { display: inline-block; margin-top: 10px; color: #ff4500; text-decoration: none; font-weight: bold; font-size: 0.9em; }
+        .reddit-link:hover { text-decoration: underline; }
+
+        /* News articles */
+        .news-block {}
+        .news-article {
+            background: var(--bg-inset);
+            padding: 12px 16px; margin: 10px 0;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent);
+            transition: var(--transition);
+        }
+        .news-article h4 { margin: 0 0 6px 0; color: var(--text-primary); font-size: 1em; transition: color 0.35s; }
+        .news-article p  { margin: 0 0 6px 0; font-size: 0.85em; color: var(--text-secondary); background: none; padding: 0; transition: color 0.35s; }
+        .news-article a  { color: var(--accent); font-size: 0.85em; font-weight: bold; text-decoration: none; }
+        .news-article a:hover { text-decoration: underline; }
+
+        /* Reddit stat box */
+        .reddit-connect-btn {
+            background: linear-gradient(145deg,#ff4500,#cc3700);
+            color: white; border: none;
+            padding: 12px 24px; border-radius: 15px;
+            font-size: 1em; font-weight: bold; cursor: pointer;
+            text-decoration: none; display: inline-block;
+            box-shadow: 5px 5px 15px rgba(255,69,0,0.3);
+            transition: all 0.3s; margin-top: 10px;
+        }
+        .reddit-connect-btn:hover { transform: translateY(-2px); box-shadow: 7px 7px 20px rgba(255,69,0,0.4); }
+
+        /* ── SPORTS SCORES CARD (weather-card sized) ── */
+        .scores-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-card);
+            border-radius: 30px;
+            box-shadow: var(--shadow-card);
+            padding: 30px 30px 24px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: var(--transition);
+        }
+        .scores-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .scores-card-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--text-heading);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.35s;
+        }
+        .scores-card-meta {
+            font-size: 0.72em;
+            color: var(--text-muted);
+            transition: color 0.35s;
+        }
+        .scores-scroll-wrapper {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid var(--border-card);
+        }
+        .scores-arrow-btn {
+            flex-shrink: 0;
+            width: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: var(--text-muted);
+            background: var(--bg-inset);
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s, background 0.2s;
+            border-right: 1px solid var(--border-card);
+        }
+        .scores-arrow-btn:last-child {
+            border-right: none;
+            border-left: 1px solid var(--border-card);
+        }
+        .scores-arrow-btn:hover { color: var(--text-heading); background: var(--bg-card); }
+        .scores-scroll {
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            cursor: grab;
+            user-select: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .scores-scroll:active { cursor: grabbing; }
+        .scores-scroll::-webkit-scrollbar { display: none; }
+        .scores-inner {
+            display: flex;
+            align-items: stretch;
+            min-height: 120px;
+            width: max-content;
+        }
+        /* Each game chip — tall, card-like */
+        .score-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 16px 20px;
+            border-right: 1px solid var(--border-card);
+            min-width: 110px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            cursor: default;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .score-chip:last-child { border-right: none; }
+        .score-chip:hover { background: var(--bg-inset); }
+        /* Live chip highlight */
+        .score-chip.is-live {
+            background: rgba(255, 34, 34, 0.04);
+        }
+        .score-chip.is-live:hover {
+            background: rgba(255, 34, 34, 0.08);
+        }
+        .score-league {
+            font-size: 0.62em;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .score-matchup {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            width: 100%;
+        }
+        .score-team-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 10px;
+        }
+        .score-team-name {
+            font-size: 0.88em;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.02em;
+            transition: color 0.35s;
+            min-width: 36px;
+        }
+        .score-num {
+            font-size: 1.05em;
+            font-weight: 800;
+            color: var(--text-heading);
+            min-width: 22px;
+            text-align: right;
+            transition: color 0.35s;
+        }
+        .score-vs {
+            font-size: 0.62em;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .score-status-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 2px;
+        }
+        .score-detail {
+            font-size: 0.68em;
+            color: var(--text-muted);
+            white-space: nowrap;
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.35s;
+        }
+        .live-dot {
+            width: 7px; height: 7px;
+            background: #ff2222;
+            border-radius: 50%;
+            flex-shrink: 0;
+            animation: livepulse 1.2s ease-in-out infinite;
+        }
+        @keyframes livepulse {
+            0%,100% { opacity:1; transform:scale(1); box-shadow:0 0 0 0 rgba(255,34,34,0.5); }
+            50%      { opacity:0.8; transform:scale(1.25); box-shadow:0 0 0 4px rgba(255,34,34,0); }
+        }
+        .score-live-label {
+            font-size: 0.55em;
+            color: #ff2222;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+        }
+        /* Loading shimmer */
+        .score-loading {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 0;
+            min-height: 120px;
+        }
+        .score-shimmer {
+            width: 110px; height: 100%;
+            min-height: 120px;
+            background: linear-gradient(90deg, var(--bg-inset) 25%, var(--border-card) 50%, var(--bg-inset) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-right: 1px solid var(--border-card);
+        }
+        .score-shimmer:last-child { border-right: none; }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        .scores-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.82em;
+            color: var(--text-muted);
+            gap: 10px;
+            min-height: 120px;
+            padding: 0 20px;
+        }
+
+        /* ── GAMES ARCADE ── */
+        .arcade-section {
+            background: linear-gradient(145deg, #0d0a08, #1a1008);
+            border-radius: 30px; padding: 30px;
+            border: 2px solid rgba(255,140,66,0.25);
+            box-shadow: 12px 12px 24px rgba(0,0,0,0.4), 0 0 40px rgba(255,68,0,0.08);
+            width: 100%; box-sizing: border-box; overflow: hidden;
+        }
+        .arcade-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .arcade-header h2 {
+            color: #ff8800; font-size: 1.5em; margin: 0;
+            text-shadow: 0 0 15px #ff440055;
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            letter-spacing: 0.05em;
+        }
+        .arcade-tagline { font-size: 0.7em; color: #776655; font-style: italic; }
+        .arcade-scroll-wrapper {
+            overflow-x: auto; overflow-y: hidden; padding-bottom: 12px;
+            scrollbar-width: thin; scrollbar-color: #ff8800 rgba(255,140,66,0.1);
+            cursor: grab; user-select: none;
+        }
+        .arcade-scroll-wrapper:active { cursor: grabbing; }
+        .arcade-scroll-wrapper::-webkit-scrollbar { height: 6px; }
+        .arcade-scroll-wrapper::-webkit-scrollbar-track { background: rgba(255,140,66,0.1); border-radius: 10px; }
+        .arcade-scroll-wrapper::-webkit-scrollbar-thumb { background: #ff8800; border-radius: 10px; }
+        .arcade-row { display: flex; gap: 20px; width: max-content; padding: 4px 4px 8px 4px; }
+        .game-card {
+            width: 240px;
+            background: linear-gradient(145deg, #1a1208, #0d0a05);
+            border-radius: 18px; border: 2px solid #332211;
+            overflow: hidden; flex-shrink: 0;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            cursor: pointer; position: relative;
+        }
+        .game-card:hover {
+            border-color: #ff8800;
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(255,68,0,0.35), 0 0 20px rgba(255,136,0,0.2);
+        }
+        .game-card-thumb {
+            width: 100%; height: 140px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 4rem; position: relative; overflow: hidden;
+        }
+        .game-card-thumb canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+        .game-card-thumb-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 40%, rgba(10,8,6,0.9) 100%); }
+        .game-card-badge {
+            position: absolute; top: 10px; left: 10px;
+            background: #ff4400; color: #fff;
+            font-size: 0.45rem; padding: 3px 8px; border-radius: 6px;
+            font-family: 'Press Start 2P', monospace; z-index: 2;
+        }
+        .game-card-info { padding: 14px 16px 16px; }
+        .game-card-title { font-size: 0.65rem; color: #ff8800; font-family: 'Press Start 2P', monospace; margin: 0 0 6px 0; }
+        .game-card-desc  { font-size: 0.72em; color: #776655; line-height: 1.5; margin: 0 0 12px 0; }
+        .game-card-tags  { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .game-tag { background: rgba(255,140,66,0.1); border: 1px solid rgba(255,140,66,0.2); color: #ff8800; font-size: 0.6em; padding: 2px 8px; border-radius: 8px; }
+        .game-card-play-btn {
+            display: block; width: 100%; padding: 9px 0;
+            background: linear-gradient(135deg,#ff4400,#ff8800);
+            color: #fff; border: none; border-radius: 10px;
+            font-size: 0.6rem; font-family: 'Press Start 2P', monospace;
+            cursor: pointer; text-align: center;
+            transition: opacity 0.15s, box-shadow 0.15s;
+            box-shadow: 0 4px 12px rgba(255,68,0,0.3);
+        }
+        .game-card-play-btn:hover { opacity: 0.9; box-shadow: 0 6px 20px rgba(255,68,0,0.5); }
+        .game-card.coming-soon { opacity: 0.5; pointer-events: none; filter: grayscale(0.6); }
+        .game-card.coming-soon .game-card-badge { background: #555; }
+
+        /* ── GAME MODAL ── */
+        #game-modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.96);
+            z-index: 9999; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #game-modal.open { display: flex; }
+        #game-modal-header {
+            width: 100%; max-width: 1400px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px;
+        }
+        #game-modal-title { font-size: 1rem; color: #ff8800; font-family: 'Press Start 2P', monospace; text-shadow: 0 0 15px #ff440066; }
+        #game-modal-close {
+            background: transparent; border: 2px solid #ff4400; color: #ff4400;
+            font-family: 'Press Start 2P', monospace; font-size: 0.6rem;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.15s;
+        }
+        #game-modal-close:hover { background: #ff4400; color: #fff; box-shadow: 0 0 20px #ff440077; }
+        #game-modal-frame { width: 100%; max-width: 1400px; flex: 1; border: none; border-radius: 16px; overflow: hidden; margin: 0 20px 20px; }
+        /* ═══════════════════════════════════════
+           CHAT SYSTEM
+        ═══════════════════════════════════════ */
+
+        /* Floating chat bubble */
+        #chat-bubble {
+            position: fixed;
+            bottom: 20px; right: 20px;
+            width: 54px; height: 54px;
+            background: linear-gradient(135deg, #ff8c42, #ff4400);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255,100,0,0.4);
+            z-index: 1001;
+            transition: transform 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+        #chat-bubble:hover { transform: scale(1.1); box-shadow: 0 6px 28px rgba(255,100,0,0.5); }
+        #chat-unread-badge {
+            position: absolute;
+            top: -3px; right: -3px;
+            background: #ff2244;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            min-width: 18px; height: 18px;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 4px;
+            border: 2px solid var(--bg-page, #f7f0e8);
+            display: none;
+        }
+
+        /* Chat panel */
+        #chat-panel {
+            position: fixed;
+            bottom: 84px; right: 20px;
+            width: 380px;
+            height: 560px;
+            background: var(--bg-card, #fff);
+            border: 2px solid var(--border-card, rgba(255,140,66,0.15));
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,140,66,0.06);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+            transition: var(--transition, all 0.35s);
+        }
+        #chat-panel.open { display: flex; }
+
+        /* Chat header */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #ff8c42, #ff4400);
+            color: #fff;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .chat-header-title {
+            flex: 1;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .chat-header-sub {
+            font-size: 0.72rem;
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+        .chat-close-btn {
+            background: rgba(255,255,255,0.2);
+            border: none; color: #fff;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            cursor: pointer; font-size: 0.85rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        .chat-close-btn:hover { background: rgba(255,255,255,0.35); }
+
+        /* Tabs: Global / DMs */
+        .chat-tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-card, rgba(255,140,66,0.1));
+            flex-shrink: 0;
+            background: var(--bg-card, #fff);
+        }
+        .chat-tab {
+            flex: 1; padding: 9px 0;
+            text-align: center;
+            font-size: 0.78rem; font-weight: 600;
+            color: var(--text-muted, #999);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .chat-tab.active {
+            color: #ff8c42;
+            border-bottom-color: #ff8c42;
+        }
+
+        /* Users sidebar for DMs */
+        #chat-users-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            display: none;
+        }
+        #chat-users-list.visible { display: block; }
+        .chat-user-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .chat-user-row:hover { background: var(--bg-inset, rgba(255,140,66,0.05)); }
+        .chat-user-row.active-dm { background: rgba(255,140,66,0.1); }
+        .chat-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.85rem; color: #fff;
+            flex-shrink: 0; position: relative;
+        }
+        .chat-avatar-online::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 9px; height: 9px;
+            background: #22cc55; border-radius: 50%;
+            border: 2px solid var(--bg-card, #fff);
+        }
+        .chat-user-info { flex: 1; min-width: 0; }
+        .chat-user-name {
+            font-size: 0.83rem; font-weight: 600;
+            color: var(--text-primary, #222);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .chat-user-handle {
+            font-size: 0.7rem; color: var(--text-muted, #999);
+        }
+        .dm-unread-badge {
+            background: #ff2244; color: #fff;
+            font-size: 0.6rem; font-weight: 700;
+            min-width: 18px; height: 18px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 4px; flex-shrink: 0;
+        }
+
+        /* Back button in DM view */
+        .chat-back-btn {
+            display: none;
+            align-items: center; gap: 6px;
+            padding: 8px 12px;
+            font-size: 0.78rem; font-weight: 600;
+            color: #ff8c42; cursor: pointer;
+            border-bottom: 1px solid var(--border-card, rgba(255,140,66,0.1));
+            flex-shrink: 0;
+            background: var(--bg-inset, rgba(255,140,66,0.04));
+        }
+        .chat-back-btn:hover { background: rgba(255,140,66,0.08); }
+
+        /* Messages area */
+        #chat-messages {
+            flex: 1; overflow-y: auto;
+            padding: 12px 14px;
+            display: flex; flex-direction: column;
+            gap: 8px;
+            scroll-behavior: smooth;
+        }
+        #chat-messages::-webkit-scrollbar { width: 4px; }
+        #chat-messages::-webkit-scrollbar-thumb { background: var(--accent, #ff8c42); border-radius: 4px; }
+
+        .chat-msg {
+            display: flex; gap: 8px; align-items: flex-end;
+            animation: msgIn 0.2s ease;
+        }
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .chat-msg.mine { flex-direction: row-reverse; }
+        .chat-msg-avatar {
+            width: 26px; height: 26px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; font-weight: 700; color: #fff;
+            flex-shrink: 0;
+        }
+        .chat-msg-body { max-width: 72%; }
+        .chat-msg-name {
+            font-size: 0.68rem; color: var(--text-muted, #999);
+            margin-bottom: 2px; padding: 0 4px;
+        }
+        .chat-msg.mine .chat-msg-name { text-align: right; }
+        .chat-bubble-text {
+            background: var(--bg-inset, rgba(255,140,66,0.07));
+            border: 1px solid var(--border-card, rgba(255,140,66,0.1));
+            color: var(--text-primary, #222);
+            padding: 8px 12px;
+            border-radius: 16px 16px 16px 4px;
+            font-size: 0.85rem; line-height: 1.45;
+            word-break: break-word;
+        }
+        .chat-msg.mine .chat-bubble-text {
+            background: linear-gradient(135deg, #ff8c42, #ff5500);
+            color: #fff; border-color: transparent;
+            border-radius: 16px 16px 4px 16px;
+        }
+        .chat-msg-time {
+            font-size: 0.62rem; color: var(--text-muted, #bbb);
+            margin-top: 3px; padding: 0 4px;
+        }
+        .chat-msg.mine .chat-msg-time { text-align: right; }
+        .chat-date-divider {
+            text-align: center; font-size: 0.68rem; color: var(--text-muted, #bbb);
+            margin: 6px 0; position: relative;
+        }
+        .chat-date-divider::before, .chat-date-divider::after {
+            content: ''; position: absolute; top: 50%;
+            width: 30%; height: 1px; background: var(--border-card, rgba(255,140,66,0.1));
+        }
+        .chat-date-divider::before { left: 0; }
+        .chat-date-divider::after  { right: 0; }
+
+        /* Input area */
+        .chat-input-area {
+            display: flex; gap: 8px;
+            padding: 10px 12px;
+            border-top: 2px solid var(--border-card, rgba(255,140,66,0.1));
+            background: var(--bg-card, #fff);
+            flex-shrink: 0;
+            align-items: center;
+        }
+        #chat-input {
+            flex: 1;
+            padding: 9px 14px;
+            border: 2px solid var(--border-input, rgba(255,140,66,0.2));
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-family: 'Arial', sans-serif;
+            background: var(--bg-input, rgba(255,140,66,0.04));
+            color: var(--text-primary, #222);
+            outline: none;
+            transition: border-color 0.2s;
+            resize: none;
+        }
+        #chat-input:focus { border-color: #ff8c42; }
+        #chat-send-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #ff8c42, #ff4400);
+            border: none; color: #fff; font-size: 1rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: opacity 0.15s, transform 0.15s;
+            box-shadow: 0 2px 10px rgba(255,100,0,0.3);
+        }
+        #chat-send-btn:hover { opacity: 0.9; transform: scale(1.08); }
+
+        /* User greeting in header */
+        .dash-user-greeting {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .dash-user-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.85rem; color: #fff;
+        }
+        .dash-user-name { font-size: 0.85em; color: var(--text-heading); font-weight: 600; }
+        .dash-logout-link {
+            font-size: 0.75em; color: var(--text-muted);
+            text-decoration: none; margin-left: 6px;
+        }
+        .dash-logout-link:hover { color: #ff4400; }
+        /* STOCKS & CRYPTO WIDGETS */
+        .market-box { background:var(--bg-card); border:2px solid var(--border-card); box-shadow:var(--shadow-card); border-radius:30px; padding:30px; transition:var(--transition),transform 0.3s; }
+        .market-box:hover { transform:translateY(-5px); }
+        .market-box h2 { color:var(--text-heading); font-size:1.4em; margin:0 0 18px 0; display:flex; align-items:center; justify-content:space-between; transition:color 0.35s; }
+        .market-search-row { display:flex; gap:10px; margin-bottom:16px; }
+        .market-input { flex:1; padding:10px 16px; border-radius:12px; border:2px solid var(--border-input); background:var(--bg-input); color:var(--text-primary); font-size:0.95em; outline:none; font-family:inherit; transition:border-color 0.2s; }
+        .market-input:focus { border-color:var(--accent); }
+        .market-input::placeholder { color:var(--text-muted); }
+        .market-add-btn { padding:10px 20px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:0.9em; font-weight:bold; cursor:pointer; font-family:inherit; transition:opacity 0.15s,transform 0.15s; }
+        .market-add-btn:hover { opacity:0.85; transform:translateY(-1px); }
+        .market-refresh { background:none; border:1px solid var(--border-card); color:var(--text-muted); border-radius:8px; font-size:0.68em; padding:4px 10px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+        .market-refresh:hover { border-color:var(--accent); color:var(--accent); }
+        .market-list { display:flex; flex-direction:column; gap:9px; min-height:60px; }
+        .market-item { display:flex; align-items:center; gap:10px; padding:11px 14px; background:var(--bg-inset); border-radius:14px; border:1px solid var(--border-card); transition:background 0.2s; }
+        .market-item:hover { background:var(--bg-input); }
+        .market-ticker { font-weight:700; font-size:0.95em; color:var(--text-heading); min-width:58px; }
+        .market-name   { flex:1; font-size:0.8em; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .market-price  { font-weight:700; font-size:0.95em; color:var(--text-primary); min-width:78px; text-align:right; }
+        .market-change { font-size:0.82em; font-weight:600; min-width:68px; text-align:center; padding:3px 8px; border-radius:8px; }
+        .market-change.up   { color:#22c55e; background:rgba(34,197,94,0.12); }
+        .market-change.down { color:#ef4444; background:rgba(239,68,68,0.12); }
+        .market-remove { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1em; padding:2px 5px; border-radius:6px; transition:color 0.15s,background 0.15s; }
+        .market-remove:hover { color:#ef4444; background:rgba(239,68,68,0.1); }
+        .market-empty { color:var(--text-muted); font-size:0.88em; text-align:center; padding:22px 0; }
+        .market-err   { color:#ef4444; font-size:0.82em; }
+    </style>
+<body>
+
+    <!-- News Ticker: uses article.title since news is a list of dicts -->
+    <div class="news-ticker">
+        <div class="news-ticker-content">
+            {% for article in news %}
+                <span class="news-ticker-item">{{ article.title }}</span>
+            {% endfor %}
+            {% for article in news %}
+                <span class="news-ticker-item">{{ article.title }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <a href="/settings" class="settings-btn">⚙️ Settings</a>
+
+    <!-- Dark / Light mode toggle -->
+    <div id="theme-toggle" role="button" aria-label="Toggle dark/light mode" onclick="toggleTheme()">
+        <span class="toggle-option" id="toggle-light">☀️ Light</span>
+        <span class="toggle-option" id="toggle-dark">🌙 Dark</span>
+    </div>
+
+    <!-- ══ CHAT BUBBLE ══ -->
+    <div id="chat-bubble" onclick="toggleChat()" title="Messages">
+        💬
+        <div id="chat-unread-badge">{{ dm_unread if dm_unread else '' }}</div>
+    </div>
+
+    <!-- ══ CHAT PANEL ══ -->
+    <div id="chat-panel">
+        <!-- Header -->
+        <div class="chat-header">
+            <div style="flex:1">
+                <div class="chat-header-title" id="chat-header-title">💬 Messages</div>
+                <div class="chat-header-sub" id="chat-header-sub">Global chat room</div>
+            </div>
+            <button class="chat-close-btn" onclick="toggleChat()">✕</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="chat-tabs">
+            <div class="chat-tab active" id="tab-global" onclick="switchTab('global')">🌐 Global</div>
+            <div class="chat-tab" id="tab-dms" onclick="switchTab('dms')">✉️ Direct <span id="dm-tab-badge" style="display:none;background:#ff2244;color:#fff;font-size:0.6rem;border-radius:8px;padding:1px 5px;margin-left:3px;">{{ dm_unread }}</span></div>
+        </div>
+
+        <!-- Back button (shown in DM thread view) -->
+        <div class="chat-back-btn" id="chat-back-btn" onclick="backToUsers()">
+            ← <span id="chat-back-label">Back</span>
+        </div>
+
+        <!-- Users list (DMs tab) -->
+        <div id="chat-users-list">
+            {% if all_users %}
+                {% for u in all_users %}
+                <div class="chat-user-row" id="user-row-{{ u.id }}"
+                     onclick="openDM({{ u.id }}, '{{ u.display_name }}', '{{ u.avatar_color }}', '{{ u.username }}')">
+                    <div class="chat-avatar" style="background:{{ u.avatar_color }};">
+                        {{ u.display_name[0].upper() }}
+                    </div>
+                    <div class="chat-user-info">
+                        <div class="chat-user-name">{{ u.display_name }}</div>
+                        <div class="chat-user-handle">@{{ u.username }}</div>
+                    </div>
+                    {% if u.unread > 0 %}
+                    <div class="dm-unread-badge" id="dm-badge-{{ u.id }}">{{ u.unread }}</div>
+                    {% else %}
+                    <div class="dm-unread-badge" id="dm-badge-{{ u.id }}" style="display:none;"></div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:0.82rem;">
+                    No other users yet.<br>Invite a friend to join!
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-messages"></div>
+
+        <!-- Input -->
+        <div class="chat-input-area">
+            <input type="text" id="chat-input"
+                   placeholder="Type a message…"
+                   onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}">
+            <button id="chat-send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>✨ My Dashboard</h1>
+        <div style="display:flex;align-items:center;gap:20px;">
+            <div class="dash-user-greeting">
+                <div class="dash-user-avatar" style="background:{{ current_user.avatar_color }};">
+                    {{ current_user.display_name[0].upper() }}
+                </div>
+                <div>
+                    <div class="dash-user-name">{{ current_user.display_name }}</div>
+                    <a href="/logout" class="dash-logout-link">Sign out</a>
+                </div>
+            </div>
+            <div class="date-time">
+                <div class="time">{{ datetime.time }}</div>
+                <div class="date">{{ datetime.date }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-container">
+
+        <!-- Weather - Full Width -->
+        <div class="weather-box">
+            {% if weather.error %}
+                <p class="error">{{ weather.error }}</p>
+            {% else %}
+                <!-- Today's icon -->
+                <div class="weather-icon">
+                    {% if 'Clear' in weather.condition or 'Sunny' in weather.condition %}☀️
+                    {% elif 'Cloud' in weather.condition %}☁️
+                    {% elif 'Rain' in weather.condition %}🌧️
+                    {% elif 'Snow' in weather.condition %}❄️
+                    {% elif 'Thunder' in weather.condition %}⛈️
+                    {% else %}🌤️
+                    {% endif %}
+                </div>
+
+                <!-- Today's conditions -->
+                <div class="weather-info">
+                    <h2>🌤️ {{ weather.city }} Weather</h2>
+                    <div class="weather-temp">{{ weather.temp }}</div>
+                    <div class="weather-details">
+                        <div class="weather-detail"><strong>Condition:</strong> {{ weather.condition }}</div>
+                        <div class="weather-detail"><strong>Feels Like:</strong> {{ weather.feels_like }}</div>
+                        <div class="weather-detail"><strong>Humidity:</strong> {{ weather.humidity }}</div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="forecast-divider"></div>
+
+                <!-- 7-day forecast strip -->
+                {% if weather.forecast %}
+                <div class="forecast-strip">
+                    {% for day in weather.forecast %}
+                    <div class="forecast-day">
+                        <div class="forecast-day-name">{{ day.day }}</div>
+                        <div class="forecast-icon">
+                            {% if 'Clear' in day.condition or 'Sunny' in day.condition %}☀️
+                            {% elif 'Cloud' in day.condition %}☁️
+                            {% elif 'Rain' in day.condition %}🌧️
+                            {% elif 'Snow' in day.condition %}❄️
+                            {% elif 'Thunder' in day.condition %}⛈️
+                            {% elif 'Mist' in day.condition or 'Fog' in day.condition %}🌫️
+                            {% elif 'Sleet' in day.condition or 'Drizzle' in day.condition %}🌦️
+                            {% else %}🌤️
+                            {% endif %}
+                        </div>
+                        <div class="forecast-high">{{ day.high }}</div>
+                        <div class="forecast-low">{{ day.low }}</div>
+                        <div class="forecast-rain">💧{{ day.rain_chance }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Row 1: Instagram, Gmail, Bank -->
+        <div class="three-column-row">
+
+            <div class="stat-box">
+                <h2>📸 Instagram</h2>
+                {% if instagram.error %}
+                    <p class="error">{{ instagram.error }}</p>
+                {% else %}
+                    <p><strong>@{{ instagram.username }}</strong></p>
+                    <p><strong>Followers:</strong> {{ instagram.followers }}</p>
+                    <p><strong>Following:</strong> {{ instagram.following }}</p>
+                    <p><strong>Posts:</strong> {{ instagram.posts }}</p>
+                {% endif %}
+            </div>
+
+            <div class="stat-box">
+                <h2>📧 Gmail</h2>
+                {% if gmail.error %}
+                    <a href="/connect_gmail" class="connect-bank-btn">🔗 Connect Gmail</a>
+                {% else %}
+                    <p><strong>Unread:</strong> {{ gmail.count }}</p>
+                    {% if gmail.messages %}
+                        {% for msg in gmail.messages[:3] %}
+                            <p style="font-size:0.85em; border-bottom:1px solid rgba(255,140,66,0.1); padding:5px 0;">
+                                <strong>From:</strong> {{ msg.from[:30] }}<br>
+                                <strong>Subject:</strong> {{ msg.subject[:40] }}
+                            </p>
+                        {% endfor %}
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="stat-box">
+                <h2>💰 Bank Accounts</h2>
+                {% if bank_accounts %}
+                    {% for account in bank_accounts %}
+                        <p><strong>{{ account.name }}</strong></p>
+                        <p><strong>Balance:</strong> ${{ "%.2f"|format(account.balance) }}</p>
+                        <p style="font-size:0.9em; color:#666;">{{ account.type }} - {{ account.subtype }}</p>
+                    {% endfor %}
+                {% else %}
+                    <button id="linkButton" class="connect-bank-btn">🔗 Connect Bank Account</button>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- ══ SPORTS SCORES — Full Width Card ══ -->
+        <div class="scores-card" id="scoresBar">
+            <!-- Header -->
+            <div class="scores-card-header">
+                <div class="scores-card-title">
+                    <span>🏆</span> Live Scores &amp; Schedule
+                </div>
+                <div class="scores-card-meta" id="scores-last-updated"></div>
+            </div>
+            <!-- Scrollable chip row -->
+            <div class="scores-scroll-wrapper">
+                <div class="scores-arrow-btn" onclick="scoresScroll(-400)">&#8249;</div>
+                <div class="scores-scroll" id="scoresScroll">
+                    <div class="scores-inner" id="scoresInner">
+                        <div class="score-loading">
+                            <div class="score-shimmer"></div>
+                            <div class="score-shimmer"></div>
+                            <div class="score-shimmer"></div>
+                            <div class="score-shimmer"></div>
+                            <div class="score-shimmer"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="scores-arrow-btn" onclick="scoresScroll(400)">&#8250;</div>
+            </div>
+        </div>
+
+        <!-- Row 2: Calendar + Maps -->
+        <div class="three-column-row">
+
+            <div class="stat-box">
+                <h2>📅 Calendar</h2>
+                {% if calendar.error %}
+                    <a href="/connect_gmail" class="connect-bank-btn">🔗 Connect Calendar</a>
+                {% else %}
+                    <div class="calendar-events">
+                        {% if calendar.events %}
+                            {% for event in calendar.events %}
+                                <div class="calendar-event">
+                                    <p class="event-title">{{ event.summary }}</p>
+                                    <p class="event-time">{{ event.start }}</p>
+                                    {% if event.location %}
+                                        <p class="event-location">📍 {{ event.location }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No upcoming events!</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Maps spans 2 columns -->
+            <div class="stat-box" style="grid-column: span 2;">
+                <h2>🗺️ Maps</h2>
+                <div class="map-wrapper">
+                    <input
+                        id="pac-input"
+                        type="text"
+                        placeholder="🔍 Search for a place..."
+                        class="map-search-input"
+                    >
+                    <div id="map"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Row 3: Reddit Stats + Breaking News -->
+        <div class="three-column-row">
+
+            <!-- Reddit Stats -->
+            <div class="reddit-stat-box">
+                <h2>🤖 Reddit</h2>
+                {% if reddit_stats and not reddit_stats.error %}
+                    <p><strong>u/{{ reddit_stats.username }}</strong></p>
+                    <p><strong>Link Karma:</strong> {{ reddit_stats.link_karma }}</p>
+                    <p><strong>Comment Karma:</strong> {{ reddit_stats.comment_karma }}</p>
+                    <p><strong>Total Karma:</strong> {{ reddit_stats.total_karma }}</p>
+                    <p style="font-size:0.85em; color:#999;">Member since {{ reddit_stats.created }}</p>
+                    <a href="/disconnect_reddit" class="reddit-connect-btn" style="background: linear-gradient(145deg,#aaa,#888); margin-top:10px;">Disconnect Reddit</a>
+                {% else %}
+                    <p style="color:#999;">Connect your Reddit account to see your karma and Reddit posts in your feed.</p>
+                    <a href="/connect_reddit" class="reddit-connect-btn">🔗 Connect Reddit</a>
+                {% endif %}
+            </div>
+
+            <!-- Breaking News - spans 2 columns -->
+            <div class="stat-box" style="grid-column: span 2;">
+                <h2>📰 Breaking News</h2>
+                <div class="news-block">
+                    {% if news %}
+                        {% for article in news %}
+                        <div class="news-article">
+                            <h4>{{ article.title }}</h4>
+                            {% if article.summary %}
+                                <p>{{ article.summary | striptags | truncate(120) }}</p>
+                            {% endif %}
+                            <a href="{{ article.link }}" target="_blank">Read more →</a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color:#999;">No news articles available right now.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+<!-- STOCKS & CRYPTO -->
+        <div class="three-column-row" style="grid-template-columns:1fr 1fr;">
+            <div class="market-box">
+                <h2>📈 Stock Watchlist <button class="market-refresh" onclick="refreshMarket('stock')">↻ Refresh</button></h2>
+                <div class="market-search-row">
+                    <input class="market-input" id="stock-input" type="text" placeholder="Ticker — e.g. AAPL, TSLA" onkeydown="if(event.key==='Enter')addMarketItem('stock')">
+                    <button class="market-add-btn" onclick="addMarketItem('stock')">+ Add</button>
+                </div>
+                <div class="market-list" id="stock-list"><div class="market-empty">Add a ticker above to start watching.</div></div>
+            </div>
+            <div class="market-box">
+                <h2>🪙 Crypto Watchlist <button class="market-refresh" onclick="refreshMarket('crypto')">↻ Refresh</button></h2>
+                <div class="market-search-row">
+                    <input class="market-input" id="crypto-input" type="text" placeholder="Symbol — e.g. BTC, ETH, SOL" onkeydown="if(event.key==='Enter')addMarketItem('crypto')">
+                    <button class="market-add-btn" onclick="addMarketItem('crypto')">+ Add</button>
+                </div>
+                <div class="market-list" id="crypto-list"><div class="market-empty">Add a coin above to start watching.</div></div>
+            </div>
+        </div>
+        <!-- ══ GAMES ARCADE ══ -->
+        <div class="arcade-section">
+            <div class="arcade-header">
+                <h2>🕹️ ARCADE</h2>
+                <span class="arcade-tagline">Mini-games built for the dashboard</span>
+            </div>
+            <div class="arcade-scroll-wrapper" id="arcadeScroll">
+                <div class="arcade-row">
+
+                    <!-- ASHFALL -->
+                    <div class="game-card" onclick="openGame('ashfall')">
+                        <div class="game-card-thumb" style="background: linear-gradient(135deg,#1a0a00,#3a1500,#0a0806);">
+                            <canvas id="ashfall-preview" width="240" height="140"></canvas>
+                            <div class="game-card-thumb-overlay"></div>
+                            <span class="game-card-badge">NEW</span>
+                        </div>
+                        <div class="game-card-info">
+                            <div class="game-card-title">ASHFALL</div>
+                            <div class="game-card-desc">Post-apocalyptic pixel battle royale. Last survivor wins.</div>
+                            <div class="game-card-tags">
+                                <span class="game-tag">Battle Royale</span>
+                                <span class="game-tag">Pixel</span>
+                                <span class="game-tag">1P</span>
+                            </div>
+                            <button class="game-card-play-btn">▶ PLAY NOW</button>
+                        </div>
+                    </div>
+
+                    <!-- XENOPET -->
+                    <div class="game-card" onclick="openGame('xenopet')">
+                        <div class="game-card-thumb" style="background: linear-gradient(135deg,#050510,#0b0b1f,#060a1e);">
+                            <canvas id="xenopet-preview" width="240" height="140"></canvas>
+                            <div class="game-card-thumb-overlay"></div>
+                            <span class="game-card-badge" style="background:linear-gradient(135deg,#00f5d4,#b06aff);color:#000;">LIVE</span>
+                        </div>
+                        <div class="game-card-info">
+                            <div class="game-card-title" style="color:#00f5d4;">XENOPET</div>
+                            <div class="game-card-desc">Bond with an alien companion. Feed, bathe, play — or watch it die.</div>
+                            <div class="game-card-tags">
+                                <span class="game-tag" style="color:#00f5d4;border-color:rgba(0,245,212,0.3);">Tamagotchi</span>
+                                <span class="game-tag" style="color:#00f5d4;border-color:rgba(0,245,212,0.3);">Sim</span>
+                                <span class="game-tag" style="color:#00f5d4;border-color:rgba(0,245,212,0.3);">Persistent</span>
+                            </div>
+                            <button class="game-card-play-btn" style="background:linear-gradient(135deg,#00c4aa,#b06aff);">▶ PLAY NOW</button>
+                        </div>
+                    </div>
+
+                    <!-- COMING SOON placeholders -->
+                    <div class="game-card coming-soon">
+                        <div class="game-card-thumb" style="background: linear-gradient(135deg,#001a0a,#003520);">
+                            <div style="font-size:3.5rem;z-index:1;position:relative;">🌿</div>
+                            <div class="game-card-thumb-overlay"></div>
+                            <span class="game-card-badge">SOON</span>
+                        </div>
+                        <div class="game-card-info">
+                            <div class="game-card-title">OVERGROWTH</div>
+                            <div class="game-card-desc">Tower defense in a world reclaimed by nature.</div>
+                            <div class="game-card-tags">
+                                <span class="game-tag">Tower Defense</span>
+                                <span class="game-tag">Strategy</span>
+                            </div>
+                            <button class="game-card-play-btn">🔒 COMING SOON</button>
+                        </div>
+                    </div>
+
+                    <div class="game-card coming-soon">
+                        <div class="game-card-thumb" style="background: linear-gradient(135deg,#00001a,#0a0030);">
+                            <div style="font-size:3.5rem;z-index:1;position:relative;">🚀</div>
+                            <div class="game-card-thumb-overlay"></div>
+                            <span class="game-card-badge">SOON</span>
+                        </div>
+                        <div class="game-card-info">
+                            <div class="game-card-title">VOIDRIFT</div>
+                            <div class="game-card-desc">Retro space shooter. Survive endless waves.</div>
+                            <div class="game-card-tags">
+                                <span class="game-tag">Shoot 'em Up</span>
+                                <span class="game-tag">Arcade</span>
+                            </div>
+                            <button class="game-card-play-btn">🔒 COMING SOON</button>
+                        </div>
+                    </div>
+
+                    <div class="game-card coming-soon">
+                        <div class="game-card-thumb" style="background: linear-gradient(135deg,#1a0010,#300020);">
+                            <div style="font-size:3.5rem;z-index:1;position:relative;">🗡️</div>
+                            <div class="game-card-thumb-overlay"></div>
+                            <span class="game-card-badge">SOON</span>
+                        </div>
+                        <div class="game-card-info">
+                            <div class="game-card-title">CRYPTDIVE</div>
+                            <div class="game-card-desc">Roguelike dungeon crawler. One life, endless depth.</div>
+                            <div class="game-card-tags">
+                                <span class="game-tag">Roguelike</span>
+                                <span class="game-tag">RPG</span>
+                            </div>
+                            <button class="game-card-play-btn">🔒 COMING SOON</button>
+                        </div>
+                    </div>
+
+                    <div class="game-card coming-soon">
+                        <div class="game-card-thumb" style="background: linear-gradient(135deg,#0a1a00,#152800);">
+                            <div style="font-size:3.5rem;z-index:1;position:relative;">🏎️</div>
+                            <div class="game-card-thumb-overlay"></div>
+                            <span class="game-card-badge">SOON</span>
+                        </div>
+                        <div class="game-card-info">
+                            <div class="game-card-title">NITRO RUN</div>
+                            <div class="game-card-desc">Top-down pixel racing on post-apocalyptic tracks.</div>
+                            <div class="game-card-tags">
+                                <span class="game-tag">Racing</span>
+                                <span class="game-tag">Pixel</span>
+                            </div>
+                            <button class="game-card-play-btn">🔒 COMING SOON</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Feed - Full Width (YouTube + Instagram + Reddit) -->
+        <div class="social-feed-box-scroll">
+            <h2>📱 Your Feed</h2>
+            <div class="feed-scroll-container" id="feedContainer">
+                {% if social_feed %}
+                    {% for post in social_feed %}
+                        <div class="feed-card {{ post.platform }}" data-post-id="{{ loop.index }}">
+
+                            {% if post.platform == 'youtube' %}
+                                <!-- YouTube: inline embedded player -->
+                                <div class="feed-card-header">
+                                    <span class="platform-icon">▶️</span>
+                                    <div class="feed-card-meta">
+                                        <span class="platform-name">YouTube</span>
+                                        <span class="channel-name">{{ post.channel }}</span>
+                                        <span class="time-ago">{{ post.time_ago }}</span>
+                                    </div>
+                                </div>
+                                <div class="video-container" data-video-id="{{ post.video_id }}">
+                                    <iframe
+                                        id="yt-player-{{ loop.index }}"
+                                        src="https://www.youtube.com/embed/{{ post.video_id }}?enablejsapi=1&autoplay=0&mute=1&rel=0&modestbranding=1"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen>
+                                    </iframe>
+                                </div>
+                                <div class="feed-card-content">
+                                    <p class="feed-card-title">{{ post.title }}</p>
+                                </div>
+
+                            {% elif post.platform == 'instagram' %}
+                                <!-- Instagram post -->
+                                <div class="feed-card-header">
+                                    <span class="platform-icon instagram-icon">📸</span>
+                                    <div class="feed-card-meta">
+                                        <span class="platform-name">Instagram</span>
+                                        <span class="time-ago">{{ post.time_ago }}</span>
+                                    </div>
+                                </div>
+                                <a href="{{ post.url }}" target="_blank" class="feed-card-link">
+                                    <img src="{{ post.image }}" alt="Instagram post" class="feed-card-image">
+                                </a>
+                                <div class="feed-card-content">
+                                    <div class="feed-card-actions">
+                                        <span class="action-icon">❤️</span>
+                                        <span class="action-icon">💬</span>
+                                        <span class="action-icon">📤</span>
+                                    </div>
+                                    <p class="feed-card-likes">{{ post.likes }} likes</p>
+                                    <p class="feed-card-caption">{{ post.caption }}</p>
+                                </div>
+
+                            {% elif post.platform == 'reddit' %}
+                                <!-- Reddit post -->
+                                <div class="feed-card-header">
+                                    <span class="platform-icon reddit-icon">🤖</span>
+                                    <div class="feed-card-meta">
+                                        <span class="platform-name">Reddit &mdash; r/{{ post.subreddit }}</span>
+                                        <span class="channel-name">u/{{ post.author }}</span>
+                                        <span class="time-ago">{{ post.time_ago }}</span>
+                                    </div>
+                                </div>
+                                {% if post.thumbnail %}
+                                    <a href="{{ post.url }}" target="_blank" class="feed-card-link">
+                                        <img src="{{ post.thumbnail }}" alt="Post thumbnail" class="reddit-thumbnail">
+                                    </a>
+                                {% endif %}
+                                <div class="feed-card-content">
+                                    <p class="feed-card-title">{{ post.title }}</p>
+                                    <div class="reddit-meta">
+                                        <span class="reddit-score">▲ {{ post.score }}</span>
+                                        <span>💬 {{ post.num_comments }} comments</span>
+                                    </div>
+                                    <a href="{{ post.url }}" target="_blank" class="reddit-link">View on Reddit →</a>
+                                </div>
+                            {% endif %}
+
+                            <div class="feed-card-divider"></div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="feed-empty">
+                        <p>🔄 Loading your feed...</p>
+                        <p>Connect your accounts in settings to see posts here!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══ GAME MODAL ══ -->
+    <div id="game-modal">
+        <div id="game-modal-header">
+            <div id="game-modal-title">🕹️ ASHFALL</div>
+            <button id="game-modal-close" onclick="closeGame()">✕ CLOSE</button>
+        </div>
+        <iframe id="game-modal-frame" src="" allowfullscreen></iframe>
+    </div>
+
+    <!-- Google Maps -->
+    <script>
+        function initMap() {
+            const defaultLocation = { lat: 35.2271, lng: -80.8431 };
+            const map = new google.maps.Map(document.getElementById('map'), {
+                center: defaultLocation,
+                zoom: 12,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: true,
+            });
+            const input = document.getElementById('pac-input');
+            const searchBox = new google.maps.places.SearchBox(input);
+            let markers = [];
+            searchBox.addListener('places_changed', () => {
+                const places = searchBox.getPlaces();
+                if (!places || places.length === 0) return;
+                markers.forEach(m => m.setMap(null));
+                markers = [];
+                const bounds = new google.maps.LatLngBounds();
+                places.forEach(place => {
+                    if (!place.geometry || !place.geometry.location) return;
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `<div style="padding:10px;"><strong>${place.name}</strong><br>${place.formatted_address || ''}</div>`
+                    });
+                    const marker = new google.maps.Marker({
+                        map,
+                        title: place.name,
+                        position: place.geometry.location,
+                        animation: google.maps.Animation.DROP
+                    });
+                    marker.addListener('click', () => infoWindow.open(map, marker));
+                    markers.push(marker);
+                    if (place.geometry.viewport) bounds.union(place.geometry.viewport);
+                    else bounds.extend(place.geometry.location);
+                });
+                map.fitBounds(bounds);
+            });
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ maps_api_key }}&libraries=places&callback=initMap" async defer></script>
+
+    <!-- YouTube IFrame API for auto-play-on-scroll -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let players = {};
+        let currentlyPlaying = null;
+
+        function onYouTubeIframeAPIReady() {
+            document.querySelectorAll('.video-container iframe').forEach(iframe => {
+                players[iframe.id] = new YT.Player(iframe.id, {
+                    events: { 'onStateChange': onPlayerStateChange }
+                });
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                const pid = event.target.getIframe().id;
+                // Pause all other players
+                for (let id in players) {
+                    if (id !== pid && players[id] && players[id].pauseVideo) {
+                        players[id].pauseVideo();
+                    }
+                }
+                currentlyPlaying = pid;
+            }
+        }
+
+        const feedContainer = document.getElementById('feedContainer');
+
+        function checkVideoVisibility() {
+            if (!feedContainer) return;
+            const cRect = feedContainer.getBoundingClientRect();
+            document.querySelectorAll('.video-container').forEach(container => {
+                const rect = container.getBoundingClientRect();
+                const iframe = container.querySelector('iframe');
+                if (!iframe) return;
+                const pid = iframe.id;
+                const visible = rect.top >= cRect.top && rect.bottom <= cRect.bottom;
+                if (visible && players[pid] && players[pid].playVideo && currentlyPlaying !== pid) {
+                    players[pid].playVideo();
+                } else if (!visible && players[pid] && players[pid].pauseVideo && currentlyPlaying === pid) {
+                    players[pid].pauseVideo();
+                    currentlyPlaying = null;
+                }
+            });
+        }
+
+        if (feedContainer) {
+            feedContainer.addEventListener('scroll', () => {
+                clearTimeout(window.scrollTimeout);
+                window.scrollTimeout = setTimeout(checkVideoVisibility, 100);
+            });
+        }
+
+        // Re-init after YouTube API loads async
+        window._ytAPIReady = false;
+        function onYouTubeIframeAPIReady() {
+            window._ytAPIReady = true;
+            document.querySelectorAll('.video-container iframe').forEach(iframe => {
+                players[iframe.id] = new YT.Player(iframe.id, {
+                    events: { 'onStateChange': onPlayerStateChange }
+                });
+            });
+            setTimeout(checkVideoVisibility, 1000);
+        }
+    </script>
+
+    <!-- ══ ARCADE JS ══ -->
+    <script>
+        // ── Game registry (add more games here) ──
+        const GAMES = {
+            ashfall: {
+                title: '🔥 ASHFALL',
+                src: 'games/ashfall/index.html'  // path relative to dashboard
+            },
+            xenopet: {
+                title: '👾 XENOPET',
+                src: 'games/xenopet/index.html'
+            }
+        };
+
+        // ── Open / Close modal ──
+        function openGame(id) {
+            const g = GAMES[id];
+            if (!g) return;
+            document.getElementById('game-modal-title').textContent = g.title;
+            document.getElementById('game-modal-frame').src = g.src;
+            document.getElementById('game-modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeGame() {
+            document.getElementById('game-modal-frame').src = '';
+            document.getElementById('game-modal').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        // Close on Escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeGame();
+        });
+
+        // ── Drag-to-scroll on arcade row ──
+        const arcadeScroll = document.getElementById('arcadeScroll');
+        if (arcadeScroll) {
+            let isDragging = false, startX = 0, scrollLeft = 0;
+            arcadeScroll.addEventListener('mousedown', e => {
+                isDragging = true;
+                startX = e.pageX - arcadeScroll.offsetLeft;
+                scrollLeft = arcadeScroll.scrollLeft;
+                arcadeScroll.style.cursor = 'grabbing';
+            });
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                arcadeScroll.style.cursor = 'grab';
+            });
+            arcadeScroll.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const x = e.pageX - arcadeScroll.offsetLeft;
+                arcadeScroll.scrollLeft = scrollLeft - (x - startX);
+            });
+            // Touch support
+            arcadeScroll.addEventListener('touchstart', e => {
+                startX = e.touches[0].pageX - arcadeScroll.offsetLeft;
+                scrollLeft = arcadeScroll.scrollLeft;
+            }, { passive: true });
+            arcadeScroll.addEventListener('touchmove', e => {
+                const x = e.touches[0].pageX - arcadeScroll.offsetLeft;
+                arcadeScroll.scrollLeft = scrollLeft - (x - startX);
+            }, { passive: true });
+        }
+
+        // ── Animated pixel-art preview canvas for ASHFALL ──
+        (function() {
+            const canvas = document.getElementById('ashfall-preview');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = 240, H = 140;
+            canvas.width = W; canvas.height = H;
+
+            // Simple looping pixel landscape
+            const tiles = [];
+            const GROUND_Y = 90;
+            // Color palette
+            const sky1 = '#1a0a00', sky2 = '#3a1500';
+            const colors = {
+                ground: ['#5a4a30','#6b5a3a','#4a3a20'],
+                grass:  ['#3a6b2a','#4a7b3a'],
+                lava:   ['#ff4400','#ff6600','#ff8800'],
+                stone:  ['#555566','#666677'],
+            };
+
+            // Pre-build terrain heights
+            const heights = [];
+            for (let x = 0; x < W; x++) {
+                heights[x] = Math.floor(
+                    GROUND_Y + Math.sin(x * 0.08) * 8 + Math.sin(x * 0.15 + 1) * 5
+                );
+            }
+
+            // Pixel art characters
+            function drawPlayer(px, py, flip) {
+                ctx.fillStyle = '#ff8800';
+                ctx.fillRect(px + (flip?3:2), py,     6, 5); // head
+                ctx.fillStyle = '#886644';
+                ctx.fillRect(px + (flip?1:1), py + 5, 8, 7); // body
+                ctx.fillStyle = '#554433';
+                ctx.fillRect(px + (flip?1:1), py + 12, 3, 5); // leg L
+                ctx.fillRect(px + (flip?5:5), py + 12, 3, 5); // leg R
+                // gun
+                ctx.fillStyle = '#aaa';
+                ctx.fillRect(flip ? px-4 : px+9, py+6, 5, 2);
+            }
+
+            let frame = 0;
+            let playerX = 20;
+            let playerDir = 1;
+            let lavaAnim = 0;
+
+            // Ash particles
+            const ashParticles = Array.from({length: 18}, () => ({
+                x: Math.random() * W,
+                y: Math.random() * H * 0.8,
+                dx: -0.4 - Math.random() * 0.4,
+                dy: 0.2 + Math.random() * 0.2,
+                size: 1 + Math.floor(Math.random() * 2),
+                alpha: 0.2 + Math.random() * 0.3
+            }));
+
+            function drawFrame() {
+                frame++;
+                lavaAnim = (lavaAnim + 1) % 8;
+
+                // Sky gradient
+                const grad = ctx.createLinearGradient(0, 0, 0, H);
+                grad.addColorStop(0, sky1);
+                grad.addColorStop(1, sky2);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, W, H);
+
+                // Ash particles
+                for (const p of ashParticles) {
+                    p.x += p.dx; p.y += p.dy;
+                    if (p.x < 0) p.x = W;
+                    if (p.y > H) p.y = 0;
+                    ctx.fillStyle = `rgba(180,160,140,${p.alpha})`;
+                    ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
+                }
+
+                // Terrain
+                for (let x = 0; x < W; x++) {
+                    const gh = heights[x];
+                    // lava in low spots
+                    if (gh > GROUND_Y + 4) {
+                        const lc = colors.lava[(lavaAnim + Math.floor(x/4)) % 3];
+                        ctx.fillStyle = lc;
+                        ctx.fillRect(x, gh, 1, H - gh);
+                    } else {
+                        // grass
+                        ctx.fillStyle = colors.grass[x % 2];
+                        ctx.fillRect(x, gh, 1, 1);
+                        // ground
+                        ctx.fillStyle = colors.ground[x % 3];
+                        ctx.fillRect(x, gh + 1, 1, Math.min(6, H - gh));
+                        // stone
+                        ctx.fillStyle = colors.stone[x % 2];
+                        ctx.fillRect(x, gh + 7, 1, H - gh);
+                    }
+                }
+
+                // Move player
+                playerX += playerDir * 0.6;
+                if (playerX > W - 30) playerDir = -1;
+                if (playerX < 10)     playerDir =  1;
+                const px = Math.floor(playerX);
+                const py = heights[Math.min(px + 5, W-1)] - 17;
+                drawPlayer(px, py, playerDir === -1);
+
+                // Lava glow at bottom
+                const glowGrad = ctx.createLinearGradient(0, H - 30, 0, H);
+                glowGrad.addColorStop(0, 'transparent');
+                glowGrad.addColorStop(1, `rgba(255,80,0,${0.15 + 0.05 * Math.sin(frame * 0.1)})`);
+                ctx.fillStyle = glowGrad;
+                ctx.fillRect(0, H - 30, W, 30);
+
+                // Title text
+                ctx.fillStyle = 'rgba(0,0,0,0.45)';
+                ctx.fillRect(0, 0, W, 22);
+                ctx.fillStyle = '#ff8800';
+                ctx.font = '9px "Press Start 2P", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('ASHFALL', W / 2, 14);
+
+                requestAnimationFrame(drawFrame);
+            }
+            drawFrame();
+        })();
+
+        // ── Animated pixel-art preview canvas for XENOPET ──
+        (function() {
+            const canvas = document.getElementById('xenopet-preview');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = 240, H = 140;
+            canvas.width = W; canvas.height = H;
+            ctx.imageSmoothingEnabled = false;
+
+            // Mini alien sprite — 16x16 pixel grid, GLORP-style
+            const ALIEN_COLORS = ['#3effa0','#1acc70','#a0ffd0','#ff6b9d','#000010','#ffe14a'];
+            const ALIEN_FRAMES = [
+                ["0000011110000000","0000111111100000","0001111111110000","0011111111111000",
+                 "0111111111111100","0114111114111100","0115511115511100","0111111111111100",
+                 "0011111111111000","0001111221111000","0000122222210000","0000012222100000",
+                 "0000001111000000","0000001001000000","0000001001000000","0000000000000000"],
+                ["0000011110000000","0000111111100000","0001111111110000","0011111111111000",
+                 "0111111111111100","0114111114111100","0115511115511100","0111111111111100",
+                 "0011111111111000","0001111221111000","0000122222210000","0000012222100000",
+                 "0000001111000000","0000000101000000","0000001010000000","0000000000000000"]
+            ];
+
+            function drawAlien(x, y, scale, frameIdx) {
+                const grid = ALIEN_FRAMES[frameIdx % 2];
+                for (let r = 0; r < 16; r++) {
+                    for (let c = 0; c < 16; c++) {
+                        const ch = grid[r][c];
+                        if (ch === '0') continue;
+                        ctx.fillStyle = ALIEN_COLORS[parseInt(ch) - 1];
+                        ctx.fillRect(x + c * scale, y + r * scale, scale, scale);
+                    }
+                }
+            }
+
+            // Floating star positions
+            const stars = Array.from({length: 18}, (_, i) => ({
+                x: Math.random() * W,
+                y: Math.random() * H * 0.72,
+                size: Math.random() > 0.7 ? 2 : 1,
+                twinkleOffset: Math.random() * Math.PI * 2
+            }));
+
+            // Orbiting species dots
+            const orbiters = [
+                { angle: 0,        r: 52, color: '#3effa0', speed: 0.018, size: 5 },
+                { angle: Math.PI,  r: 52, color: '#3ac8ff', speed: 0.018, size: 5 },
+                { angle: Math.PI/2,r: 38, color: '#ff4a7a', speed: 0.026, size: 4 },
+                { angle: 3*Math.PI/2, r: 38, color: '#b07aff', speed: 0.026, size: 4 },
+                { angle: Math.PI/4, r: 65, color: '#ffe14a', speed: 0.012, size: 4 }
+            ];
+
+            let frame = 0;
+
+            function drawFrame() {
+                ctx.clearRect(0, 0, W, H);
+
+                // Space background
+                const bg = ctx.createLinearGradient(0, 0, 0, H);
+                bg.addColorStop(0, '#020208');
+                bg.addColorStop(1, '#06041a');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, W, H);
+
+                // Twinkling stars
+                stars.forEach(s => {
+                    const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(frame * 0.03 + s.twinkleOffset));
+                    ctx.globalAlpha = twinkle;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
+                });
+                ctx.globalAlpha = 1;
+
+                // Ground
+                ctx.fillStyle = '#0a1208';
+                ctx.fillRect(0, H * 0.78, W, H * 0.22);
+                ctx.fillStyle = '#111f0e';
+                ctx.fillRect(0, H * 0.76, W, H * 0.04);
+
+                // Alien — centered, gentle bob
+                const scale = 5;
+                const aw = 16 * scale, ah = 16 * scale;
+                const ax = Math.floor((W - aw) / 2);
+                const ay = Math.floor(H * 0.76 - ah - 2 + Math.sin(frame * 0.05) * 3);
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(W / 2, H * 0.77, aw * 0.35, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Species glow
+                const glow = ctx.createRadialGradient(W/2, H*0.77, 0, W/2, H*0.77, 70);
+                glow.addColorStop(0, 'rgba(62,255,160,0.18)');
+                glow.addColorStop(1, 'transparent');
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, W, H);
+
+                drawAlien(ax, ay, scale, Math.floor(frame / 10));
+
+                // Orbiting species dots
+                orbiters.forEach(o => {
+                    o.angle += o.speed;
+                    const ox = W / 2 + Math.cos(o.angle) * o.r;
+                    const oy = H * 0.45 + Math.sin(o.angle) * o.r * 0.45;
+                    ctx.save();
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = o.color;
+                    ctx.fillStyle = o.color;
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, o.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                // Title watermark
+                ctx.globalAlpha = 0.55;
+                ctx.fillStyle = '#00f5d4';
+                ctx.font = '7px "Press Start 2P", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('XENOPET', W / 2, 13);
+                ctx.globalAlpha = 1;
+                ctx.textAlign = 'left';
+
+                frame++;
+                requestAnimationFrame(drawFrame);
+            }
+            drawFrame();
+        })();
+    </script>
+
+    <!-- Plaid -->
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script>
+        const linkButton = document.getElementById('linkButton');
+        if (linkButton) {
+            linkButton.addEventListener('click', async () => {
+                const res = await fetch('/create_link_token', { method: 'POST' });
+                const data = await res.json();
+                const handler = Plaid.create({
+                    token: data.link_token,
+                    onSuccess: async (public_token) => {
+                        await fetch('/exchange_public_token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ public_token })
+                        });
+                        window.location.reload();
+                    },
+                    onExit: (err) => { if (err) console.error(err); }
+                });
+                handler.open();
+            });
+        }
+    </script>
+    <!-- ══ SPORTS SCORES JS ══ -->
+    <script>
+        const scoresScrollEl = document.getElementById('scoresScroll');
+        const scoresInner    = document.getElementById('scoresInner');
+
+        // ── Drag to scroll ──
+        let sdragging = false, sstartX = 0, sscrollLeft = 0;
+        scoresScrollEl.addEventListener('mousedown', e => {
+            sdragging = true;
+            sstartX = e.pageX - scoresScrollEl.offsetLeft;
+            sscrollLeft = scoresScrollEl.scrollLeft;
+        });
+        document.addEventListener('mouseup', () => { sdragging = false; });
+        scoresScrollEl.addEventListener('mousemove', e => {
+            if (!sdragging) return;
+            e.preventDefault();
+            const x = e.pageX - scoresScrollEl.offsetLeft;
+            scoresScrollEl.scrollLeft = sscrollLeft - (x - sstartX);
+        });
+        scoresScrollEl.addEventListener('touchstart', e => {
+            sstartX = e.touches[0].pageX - scoresScrollEl.offsetLeft;
+            sscrollLeft = scoresScrollEl.scrollLeft;
+        }, { passive: true });
+        scoresScrollEl.addEventListener('touchmove', e => {
+            const x = e.touches[0].pageX - scoresScrollEl.offsetLeft;
+            scoresScrollEl.scrollLeft = sscrollLeft - (x - sstartX);
+        }, { passive: true });
+
+        function scoresScroll(px) {
+            scoresScrollEl.scrollBy({ left: px, behavior: 'smooth' });
+        }
+
+        // ── Render helpers ──
+        function conditionIcon(state) {
+            if (state === 'in')   return '<div class="live-dot"></div>';
+            if (state === 'post') return '';
+            return '';
+        }
+
+        function renderChip(ev) {
+            const isLive = ev.state === 'in';
+            const isPre  = ev.state === 'pre';
+            const hasScore = ev.home_score !== '' && ev.away_score !== '';
+
+            return `
+            <div class="score-chip${isLive ? ' is-live' : ''}">
+                <div class="score-league">${ev.icon} ${ev.league}</div>
+                <div class="score-matchup">
+                    <div class="score-team-row">
+                        <span class="score-team-name">${ev.away}</span>
+                        ${hasScore ? `<span class="score-num">${ev.away_score}</span>` : ''}
+                    </div>
+                    ${isPre ? `<div class="score-vs">vs</div>` : ''}
+                    <div class="score-team-row">
+                        <span class="score-team-name">${ev.home}</span>
+                        ${hasScore ? `<span class="score-num">${ev.home_score}</span>` : ''}
+                    </div>
+                </div>
+                <div class="score-status-row">
+                    ${isLive ? '<div class="live-dot"></div><span class="score-live-label">LIVE</span>' : ''}
+                    <div class="score-detail">${ev.detail}</div>
+                </div>
+            </div>`;
+        }
+
+        function renderEmpty() {
+            scoresInner.innerHTML = `
+                <div class="scores-empty">
+                    🏆 No games scheduled today — check back later!
+                </div>`;
+        }
+
+        async function loadScores() {
+            try {
+                const res  = await fetch('/api/scores');
+                const data = await res.json();
+                if (!data || data.length === 0) { renderEmpty(); return; }
+                const prevScroll = scoresScrollEl.scrollLeft;
+                scoresInner.innerHTML = data.map(renderChip).join('');
+                scoresScrollEl.scrollLeft = prevScroll;
+                // Stamp update time
+                const el = document.getElementById('scores-last-updated');
+                if (el) el.textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+            } catch (e) {
+                scoresInner.innerHTML = `<div class="scores-empty">⚠️ Could not load scores</div>`;
+            }
+        }
+
+        // Initial load + auto-refresh every 30 s (faster for live games)
+        loadScores();
+        setInterval(loadScores, 30000);
+    </script>
+
+    <!-- ══ CHAT JS ══ -->
+    <script>
+    (function() {
+        // ── State ──
+        const ME = {
+            username:     '{{ current_user.username }}',
+            display_name: '{{ current_user.display_name }}',
+            avatar_color: '{{ current_user.avatar_color }}'
+        };
+        let currentRoom    = 'global';
+        let currentTab     = 'global';
+        let currentDMUser  = null;   // {id, display_name, avatar_color, username}
+        let totalUnread    = {{ dm_unread or 0 }};
+        let sseSource      = null;
+
+        // ── DOM refs ──
+        const panel       = document.getElementById('chat-panel');
+        const bubble      = document.getElementById('chat-bubble');
+        const badge       = document.getElementById('chat-unread-badge');
+        const dmTabBadge  = document.getElementById('dm-tab-badge');
+        const msgArea     = document.getElementById('chat-messages');
+        const input       = document.getElementById('chat-input');
+        const usersList   = document.getElementById('chat-users-list');
+        const backBtn     = document.getElementById('chat-back-btn');
+        const headerTitle = document.getElementById('chat-header-title');
+        const headerSub   = document.getElementById('chat-header-sub');
+
+        // ── Helpers ──
+        function fmtTime(iso) {
+            if (!iso) return '';
+            const d = new Date(iso + (iso.includes('+') || iso.endsWith('Z') ? '' : 'Z'));
+            return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        }
+        function avatarLetter(name) {
+            return (name || '?')[0].toUpperCase();
+        }
+        function scrollBottom() {
+            msgArea.scrollTop = msgArea.scrollHeight;
+        }
+        function updateUnreadBadge(n) {
+            totalUnread = Math.max(0, n);
+            badge.textContent = totalUnread || '';
+            badge.style.display = totalUnread > 0 ? 'flex' : 'none';
+            if (totalUnread > 0) {
+                dmTabBadge.textContent = totalUnread;
+                dmTabBadge.style.display = 'inline';
+            } else {
+                dmTabBadge.style.display = 'none';
+            }
+        }
+
+        // ── Render a message bubble ──
+        function renderMsg(m, prepend=false) {
+            const mine = m.username === ME.username;
+            const div  = document.createElement('div');
+            div.className = 'chat-msg' + (mine ? ' mine' : '');
+            div.innerHTML = `
+                <div class="chat-msg-avatar" style="background:${m.avatar_color}">${avatarLetter(m.display_name)}</div>
+                <div class="chat-msg-body">
+                    ${!mine ? `<div class="chat-msg-name">${m.display_name}</div>` : ''}
+                    <div class="chat-bubble-text">${escHtml(m.body)}</div>
+                    <div class="chat-msg-time">${fmtTime(m.sent_at)}</div>
+                </div>`;
+            if (prepend) msgArea.prepend(div);
+            else         msgArea.appendChild(div);
+        }
+
+        function escHtml(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+        }
+
+        // ── Load history ──
+        async function loadHistory(room) {
+            msgArea.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.78rem;">Loading…</div>';
+            try {
+                const res  = await fetch('/api/messages/history?room=' + encodeURIComponent(room));
+                const msgs = await res.json();
+                msgArea.innerHTML = '';
+                if (msgs.length === 0) {
+                    msgArea.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--text-muted);font-size:0.8rem;">No messages yet.<br>Say hello! 👋</div>';
+                    return;
+                }
+                msgs.forEach(m => renderMsg(m));
+                scrollBottom();
+            } catch(e) {
+                msgArea.innerHTML = '<div style="text-align:center;padding:20px;color:#cc4444;font-size:0.78rem;">⚠️ Could not load messages</div>';
+            }
+        }
+
+        // ── Send message ──
+        window.sendMessage = async function() {
+            const body = input.value.trim();
+            if (!body) return;
+            input.value = '';
+            // Optimistic render
+            renderMsg({
+                username: ME.username, display_name: ME.display_name,
+                avatar_color: ME.avatar_color, body, sent_at: new Date().toISOString()
+            });
+            scrollBottom();
+            try {
+                await fetch('/api/messages/send', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({body, room: currentRoom})
+                });
+            } catch(e) { console.error('Send failed', e); }
+        };
+
+        // ── SSE subscription ──
+        function startSSE() {
+            if (sseSource) sseSource.close();
+            sseSource = new EventSource('/api/messages/stream');
+            sseSource.onmessage = e => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (msg.type !== 'message') return;
+                    // If the message is for the active room, render it
+                    if (msg.room === currentRoom && panel.classList.contains('open')) {
+                        renderMsg(msg);
+                        scrollBottom();
+                        // Mark read if DM
+                        if (currentRoom.startsWith('dm_')) {
+                            fetch('/api/messages/history?room=' + encodeURIComponent(currentRoom));
+                        }
+                    } else {
+                        // Increment unread badge
+                        if (msg.room.startsWith('dm_')) {
+                            updateUnreadBadge(totalUnread + 1);
+                            // Update per-user badge
+                            const parts = msg.room.split('_');
+                            const otherId = parts.find(p => p !== '' && p !== 'dm_' && parseInt(p) !== parseInt('{{ current_user.id }}'));
+                            if (otherId) {
+                                const b = document.getElementById('dm-badge-' + otherId);
+                                if (b) { b.style.display='flex'; b.textContent = (parseInt(b.textContent)||0)+1; }
+                            }
+                        }
+                        // Flash bubble
+                        bubble.style.transform = 'scale(1.2)';
+                        setTimeout(() => bubble.style.transform = '', 300);
+                    }
+                } catch(err) {}
+            };
+            sseSource.onerror = () => {
+                setTimeout(startSSE, 5000);
+            };
+        }
+
+        // ── Tab switching ──
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            document.getElementById('tab-global').classList.toggle('active', tab==='global');
+            document.getElementById('tab-dms').classList.toggle('active', tab==='dms');
+            backBtn.style.display = 'none';
+            if (tab === 'global') {
+                usersList.classList.remove('visible');
+                msgArea.style.display = 'flex';
+                document.querySelector('.chat-input-area').style.display = 'flex';
+                currentRoom = 'global';
+                currentDMUser = null;
+                headerTitle.textContent = '💬 Messages';
+                headerSub.textContent   = 'Global chat room';
+                loadHistory('global');
+            } else {
+                usersList.classList.add('visible');
+                msgArea.style.display = 'none';
+                document.querySelector('.chat-input-area').style.display = 'none';
+                headerTitle.textContent = '✉️ Direct Messages';
+                headerSub.textContent   = 'Choose someone to chat with';
+                // Refresh user list unread counts
+                refreshUserList();
+            }
+        };
+
+        async function refreshUserList() {
+            try {
+                const res   = await fetch('/api/messages/users');
+                const users = await res.json();
+                let newTotal = 0;
+                users.forEach(u => {
+                    newTotal += u.unread || 0;
+                    const b = document.getElementById('dm-badge-' + u.id);
+                    if (b) {
+                        b.textContent = u.unread;
+                        b.style.display = u.unread > 0 ? 'flex' : 'none';
+                    }
+                });
+                updateUnreadBadge(newTotal);
+            } catch(e) {}
+        }
+
+        // ── Open DM thread ──
+        window.openDM = function(uid, name, color, handle) {
+            currentDMUser = {id: uid, display_name: name, avatar_color: color, username: handle};
+            const room    = 'dm_' + [...[uid, parseInt('{{ current_user.id }}')]].sort((a,b)=>a-b).join('_');
+            currentRoom   = room;
+            // Clear per-user badge
+            const b = document.getElementById('dm-badge-' + uid);
+            if (b) { b.style.display='none'; b.textContent='0'; }
+            // Show message area
+            usersList.classList.remove('visible');
+            msgArea.style.display = 'flex';
+            document.querySelector('.chat-input-area').style.display = 'flex';
+            backBtn.style.display = 'flex';
+            document.getElementById('chat-back-label').textContent = name;
+            headerTitle.textContent = name;
+            headerSub.textContent   = '@' + handle;
+            loadHistory(room);
+            input.focus();
+        };
+
+        window.backToUsers = function() {
+            switchTab('dms');
+        };
+
+        // ── Toggle panel ──
+        window.toggleChat = function() {
+            const open = panel.classList.toggle('open');
+            if (open) {
+                startSSE();
+                loadHistory('global');
+                updateUnreadBadge(0);
+            } else {
+                if (sseSource) sseSource.close();
+            }
+        };
+
+        // Init badge
+        updateUnreadBadge(totalUnread);
+    })();
+    </script>
+
+    <!-- ══ THEME TOGGLE JS ══ -->
+    <script>
+        (function() {
+            const saved = localStorage.getItem('dashboard-theme') || 'light';
+            applyTheme(saved, false);
+        })();
+
+        function applyTheme(mode, animate) {
+            const body = document.body;
+            const light = document.getElementById('toggle-light');
+            const dark  = document.getElementById('toggle-dark');
+            if (!animate) body.style.transition = 'none';
+            if (mode === 'dark') {
+                body.classList.add('dark');
+                if (dark)  dark.classList.add('active');
+                if (light) light.classList.remove('active');
+            } else {
+                body.classList.remove('dark');
+                if (light) light.classList.add('active');
+                if (dark)  dark.classList.remove('active');
+            }
+            if (!animate) {
+                // Force reflow then restore transitions
+                void body.offsetWidth;
+                body.style.transition = '';
+            }
+            localStorage.setItem('dashboard-theme', mode);
+        }
+
+        function toggleTheme() {
+            const isDark = document.body.classList.contains('dark');
+            applyTheme(isDark ? 'light' : 'dark', true);
+        }
+    </script>
+<script>
+    (function(){
+        const state = {
+            stock:  JSON.parse(localStorage.getItem('wl_stock')  || '["AAPL","TSLA","NVDA"]'),
+            crypto: JSON.parse(localStorage.getItem('wl_crypto') || '["BTC","ETH","SOL"]'),
+        };
+        function save(type){ localStorage.setItem('wl_'+type, JSON.stringify(state[type])); }
+
+        async function fetchStock(t){
+            try{
+                const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?interval=1d&range=1d`);
+                const d=await r.json(); const m=d.chart.result[0].meta;
+                const price=m.regularMarketPrice, prev=m.chartPreviousClose||m.previousClose;
+                const chg=price-prev, pct=(chg/prev)*100;
+                return {price:'$'+price.toFixed(2), pct:(pct>=0?'+':'')+pct.toFixed(2)+'%', name:m.longName||m.shortName||t, dir:chg>=0?'up':'down'};
+            }catch(e){return null;}
+        }
+        const COINS={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin',XRP:'ripple',ADA:'cardano',DOGE:'dogecoin',AVAX:'avalanche-2',DOT:'polkadot',MATIC:'matic-network',LINK:'chainlink',LTC:'litecoin',SHIB:'shiba-inu',TON:'the-open-network',PEPE:'pepe'};
+        async function fetchCrypto(t){
+            const id=COINS[t.toUpperCase()]||t.toLowerCase();
+            try{
+                const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`);
+                const d=await r.json(); if(!d[id])return null;
+                const p=d[id].usd, pct=d[id].usd_24h_change||0;
+                return {price:'$'+(p>=1?p.toFixed(2):p.toPrecision(4)), pct:(pct>=0?'+':'')+pct.toFixed(2)+'%', name:t.toUpperCase(), dir:pct>=0?'up':'down'};
+            }catch(e){return null;}
+        }
+        function row(type,t,data){
+            const rm=`<button class="market-remove" onclick="removeMarketItem('${type}','${t}')" title="Remove">✕</button>`;
+            if(!data)return `<div class="market-item" id="mi-${type}-${t}"><span class="market-ticker">${t}</span><span class="market-name market-err">Could not load — check symbol</span>${rm}</div>`;
+            return `<div class="market-item" id="mi-${type}-${t}"><span class="market-ticker">${t}</span><span class="market-name">${data.name!==t?data.name:''}</span><span class="market-price">${data.price}</span><span class="market-change ${data.dir}">${data.pct}</span>${rm}</div>`;
+        }
+        async function render(type){
+            const el=document.getElementById(type+'-list'); if(!el)return;
+            if(!state[type].length){el.innerHTML=`<div class="market-empty">No ${type==='stock'?'stocks':'coins'} added yet.</div>`;return;}
+            el.innerHTML=state[type].map(t=>`<div class="market-item" id="mi-${type}-${t}"><span class="market-ticker">${t}</span><span style="color:var(--text-muted);font-size:0.82em;font-style:italic">Loading…</span></div>`).join('');
+            for(const t of state[type]){
+                const data=type==='stock'?await fetchStock(t):await fetchCrypto(t);
+                const item=document.getElementById(`mi-${type}-${t}`);
+                if(item)item.outerHTML=row(type,t,data);
+            }
+        }
+        window.addMarketItem=async function(type){
+            const inp=document.getElementById(type+'-input');
+            const val=inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+            if(!val)return;
+            if(state[type].includes(val)){inp.value='';return;}
+            state[type].push(val);save(type);inp.value='';await render(type);
+        };
+        window.removeMarketItem=function(type,t){state[type]=state[type].filter(x=>x!==t);save(type);render(type);};
+        window.refreshMarket=function(type){render(type);};
+        render('stock'); render('crypto');
+        setInterval(()=>{render('stock');render('crypto');},5*60*1000);
+    })();
+    </script>
+</body>
+</html>x

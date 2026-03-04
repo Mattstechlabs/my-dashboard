@@ -1,0 +1,317 @@
+/* ════════════════════════════════════════════
+   ASHFALL – Style Sheet
+   Pixel-art battle royale aesthetic
+   Font: Press Start 2P (Google Fonts CDN)
+════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --lava:    #ff4400;
+  --ember:   #ff8800;
+  --ash:     #888;
+  --dark:    #0a0806;
+  --panel:   rgba(10,8,6,0.85);
+  --hp:      #22dd44;
+  --armor:   #4488ff;
+  --text:    #f0e0c0;
+  --danger:  #ff2222;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0a0806;
+  font-family: 'Press Start 2P', monospace;
+  color: var(--text);
+  overflow: hidden;
+  width: 100vw; height: 100vh;
+  image-rendering: pixelated;
+}
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  position: fixed; inset: 0;
+  align-items: center; justify-content: center;
+  flex-direction: column;
+  z-index: 10;
+}
+.screen.active { display: flex; }
+
+/* ── TITLE SCREEN ── */
+#title-screen {
+  background: radial-gradient(ellipse at 50% 80%, #ff440033 0%, transparent 70%),
+              repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,68,0,.03) 2px, rgba(255,68,0,.03) 4px),
+              #0a0806;
+}
+
+.title-glow {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  color: var(--ember);
+  text-shadow: 0 0 20px #ff8800, 0 0 60px #ff4400, 0 0 120px #ff2200;
+  letter-spacing: 0.15em;
+  animation: pulse 2s ease-in-out infinite;
+  margin-bottom: 0.4em;
+}
+@keyframes pulse {
+  0%,100% { text-shadow: 0 0 20px #ff8800, 0 0 60px #ff4400, 0 0 120px #ff2200; }
+  50%      { text-shadow: 0 0 40px #ffaa00, 0 0 100px #ff6600, 0 0 160px #ff3300; }
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: var(--ash);
+  letter-spacing: 0.4em;
+  margin-bottom: 1.5em;
+  text-transform: uppercase;
+}
+
+.lore {
+  font-size: 0.55rem;
+  color: #776655;
+  text-align: center;
+  line-height: 2;
+  margin-bottom: 2.5em;
+}
+
+.menu-btns { display: flex; gap: 1.5em; flex-wrap: wrap; justify-content: center; }
+
+button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.65rem;
+  padding: 0.9em 1.8em;
+  border: 2px solid var(--ember);
+  background: transparent;
+  color: var(--ember);
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  image-rendering: pixelated;
+}
+button:hover {
+  background: var(--ember);
+  color: #000;
+  box-shadow: 0 0 20px var(--ember);
+}
+
+.howto {
+  font-size: 0.55rem;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid #554433;
+  padding: 1.5em;
+  margin-top: 1.5em;
+  line-height: 2.2;
+  max-width: 420px;
+  text-align: center;
+}
+.hidden { display: none !important; }
+
+/* ── GAME SCREEN ── */
+#game-screen {
+  display: none;
+  position: fixed; inset: 0;
+  z-index: 1;
+}
+#game-screen.active { display: block; }
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* ── HUD ── */
+#hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 14px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+#hud-left {
+  background: var(--panel);
+  border: 1px solid #443322;
+  padding: 8px 12px;
+  min-width: 160px;
+}
+
+.hud-label {
+  font-size: 0.4rem;
+  color: var(--ash);
+  margin-bottom: 3px;
+  letter-spacing: 0.15em;
+}
+
+#hp-bar-wrap, #armor-bar-wrap {
+  width: 140px; height: 10px;
+  background: #222;
+  border: 1px solid #443;
+  margin-bottom: 4px;
+}
+#hp-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--hp);
+  transition: width 0.2s;
+}
+#armor-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--armor);
+  transition: width 0.2s;
+}
+
+#hud-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+#zone-timer {
+  font-size: 0.5rem;
+  color: var(--hp);
+  background: var(--panel);
+  padding: 4px 10px;
+  border: 1px solid #334;
+  letter-spacing: 0.1em;
+}
+
+#kill-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+.kill-entry {
+  font-size: 0.4rem;
+  background: rgba(0,0,0,0.7);
+  padding: 2px 8px;
+  border-left: 2px solid var(--lava);
+  color: var(--text);
+  animation: fadeout 4s forwards;
+}
+@keyframes fadeout { 0%,70%{opacity:1} 100%{opacity:0} }
+
+#hud-right {
+  background: var(--panel);
+  border: 1px solid #443322;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+#weapon-name {
+  font-size: 0.5rem;
+  color: var(--ember);
+  letter-spacing: 0.1em;
+}
+#ammo-display {
+  font-size: 0.6rem;
+  color: var(--text);
+}
+
+#alive-count {
+  font-size: 0.45rem;
+  color: var(--danger);
+  letter-spacing: 0.1em;
+}
+
+#minimap-wrap {
+  border: 2px solid #554433;
+  background: #111;
+}
+#minimap { display: block; image-rendering: pixelated; }
+
+/* ── INVENTORY BAR ── */
+#inv-bar {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 20;
+  pointer-events: none;
+}
+.inv-slot {
+  width: 54px; height: 54px;
+  background: var(--panel);
+  border: 2px solid #443322;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.35rem;
+  color: #776655;
+  position: relative;
+  transition: border-color 0.1s;
+}
+.inv-slot.active {
+  border-color: var(--ember);
+  color: var(--ember);
+  box-shadow: 0 0 10px var(--ember);
+}
+.inv-icon { font-size: 1.2rem; display: block; margin-top: 2px; }
+
+#pickup-prompt {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  border: 1px solid var(--ember);
+  padding: 6px 16px;
+  font-size: 0.45rem;
+  color: var(--text);
+  z-index: 25;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── GAME OVER / WIN SCREENS ── */
+#gameover-screen {
+  background: radial-gradient(ellipse at center, #220000 0%, #0a0806 80%);
+  gap: 1em;
+}
+#go-title {
+  font-size: clamp(2rem,7vw,4rem);
+  color: var(--danger);
+  text-shadow: 0 0 30px #ff0000;
+  animation: shake 0.5s ease-in-out;
+}
+
+#win-screen {
+  background: radial-gradient(ellipse at center, #002200 0%, #0a0806 80%);
+  gap: 1em;
+}
+#win-title {
+  font-size: clamp(2rem,7vw,4rem);
+  color: #22ff44;
+  text-shadow: 0 0 30px #00ff44;
+}
+
+#go-rank, #go-stats, #win-stats {
+  font-size: 0.55rem;
+  color: var(--text);
+  text-align: center;
+  line-height: 2;
+}
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-8px)}
+  75%{transform:translateX(8px)}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { display: none; }
