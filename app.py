@@ -348,16 +348,13 @@ def get_youtube_subscriptions(creds):
         print(f"Subscription error: {e}"); return []
 
 def get_instagram_followers(username):
-    try:
-        L = instaloader.Instaloader()
-        p = instaloader.Profile.from_username(L.context, username)
-        return {'username':username,'followers':p.followers,'following':p.followees,'posts':p.mediacount}
-    except SystemExit:
-        return {'error': 'Instagram rate limited — try again later'}
-    except Exception as e:
-        return {'error': str(e)}
+    # Instaloader is blocked by Instagram on cloud servers (rate limited immediately)
+    # Return a graceful placeholder instead of hanging the worker
+    return {'error': 'Instagram connection not available on server'}
 
-def get_weather(city='Charlotte'):
+def get_instagram_posts(username):
+    # Same — instaloader times out on cloud hosts, skip entirely
+    return []
     try:
         data = requests.get(f"https://wttr.in/{city}?format=j1", timeout=8).json()
         cur  = data['current_condition'][0]
@@ -419,24 +416,6 @@ def get_youtube_videos(channel_ids):
         except Exception as e:
             print(f"YouTube error {cid}: {e}")
     return videos
-
-def get_instagram_posts(username):
-    try:
-        L = instaloader.Instaloader()
-        profile = instaloader.Profile.from_username(L.context, username)
-        posts = []
-        for post in profile.get_posts():
-            if len(posts)>=10: break
-            posts.append({'platform':'instagram','caption':post.caption or '',
-                          'image':post.url,'likes':post.likes,
-                          'url':f"https://www.instagram.com/p/{post.shortcode}/",
-                          'published':post.date_utc.isoformat(),
-                          'time_ago':get_time_ago(post.date_utc.isoformat())})
-        return posts
-    except SystemExit:
-        return []
-    except Exception:
-        return []
 
 def get_unified_feed(channel_ids, username, subreddits=['popular','news','technology']):
     posts = (get_youtube_videos(channel_ids)+get_instagram_posts(username)
