@@ -353,8 +353,10 @@ def get_instagram_followers(username):
     return {'error': 'Instagram connection not available on server'}
 
 def get_instagram_posts(username):
-    # Same — instaloader times out on cloud hosts, skip entirely
+    # Instaloader times out on cloud hosts, skip entirely
     return []
+
+def get_weather(city='Charlotte'):
     try:
         data = requests.get(f"https://wttr.in/{city}?format=j1", timeout=8).json()
         cur  = data['current_condition'][0]
