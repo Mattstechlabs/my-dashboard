@@ -650,6 +650,11 @@ def disconnect_reddit():
 @login_required
 def dashboard():
     uid         = session['user_id']
+    current_user = get_user_by_id(uid)
+    # If user no longer exists in DB (e.g. after DB reset), clear session and re-login
+    if not current_user:
+        session.clear()
+        return redirect(url_for('login'))
     city        = session.get('city','Charlotte')
     theme_color = session.get('theme_color','#ff8c42')
     bg_color    = session.get('bg_color','#fff5e6')
@@ -683,7 +688,7 @@ def dashboard():
         maps_api_key = GOOGLE_MAPS_API_KEY,
         theme_color  = theme_color,
         bg_color     = bg_color,
-        current_user = get_user_by_id(uid),
+        current_user = current_user,
         all_users    = get_all_users_except(uid),
         dm_unread    = unread_count(uid),
     )
