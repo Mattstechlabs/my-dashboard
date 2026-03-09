@@ -352,8 +352,10 @@ def get_instagram_followers(username):
         L = instaloader.Instaloader()
         p = instaloader.Profile.from_username(L.context, username)
         return {'username':username,'followers':p.followers,'following':p.followees,'posts':p.mediacount}
+    except SystemExit:
+        return {'error': 'Instagram rate limited — try again later'}
     except Exception as e:
-        return {'error':str(e)}
+        return {'error': str(e)}
 
 def get_weather(city='Charlotte'):
     try:
@@ -431,7 +433,10 @@ def get_instagram_posts(username):
                           'published':post.date_utc.isoformat(),
                           'time_ago':get_time_ago(post.date_utc.isoformat())})
         return posts
-    except: return []
+    except SystemExit:
+        return []
+    except Exception:
+        return []
 
 def get_unified_feed(channel_ids, username, subreddits=['popular','news','technology']):
     posts = (get_youtube_videos(channel_ids)+get_instagram_posts(username)
