@@ -3,13 +3,15 @@ from flask import (Flask, render_template, request, redirect,
 import instaloader
 from datetime import datetime
 import requests
-import os, json, time, queue, threading, hashlib, secrets, sqlite3, signal
+import os, json, time, queue, threading, hashlib, secrets
 import feedparser
 import praw
+import psycopg2
+import psycopg2.extras
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH  = os.path.join(BASE_DIR, 'dashboard.db')
+BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+DATABASE_URL = os.environ.get('DATABASE_URL', '')  # set in Railway variables
 
 # ─── PLAID ───────────────────────────────────────────────────────
 from plaid.model.link_token_create_request          import LinkTokenCreateRequest
@@ -63,39 +65,42 @@ DEFAULT_CHANNELS = [
 ]
 
 # ═══════════════════════════════════════════════════════════════════
-#  DATABASE
+#  DATABASE  (PostgreSQL via Supabase)
 # ═══════════════════════════════════════════════════════════════════
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
 def init_db():
-    with get_db() as db:
-        db.executescript("""
-            CREATE TABLE IF NOT EXISTS users (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                username      TEXT    UNIQUE NOT NULL,
-                email         TEXT    UNIQUE NOT NULL,
-                display_name  TEXT    NOT NULL DEFAULT '',
-                avatar_color  TEXT    NOT NULL DEFAULT '#ff8c42',
-                password_hash TEXT    NOT NULL,
-                salt          TEXT    NOT NULL,
-                created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
-                last_seen     TEXT
-            );
-
-            CREATE TABLE IF NOT EXISTS messages (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                sender_id    INTEGER NOT NULL REFERENCES users(id),
-                recipient_id INTEGER,
-                room         TEXT    NOT NULL DEFAULT 'global',
-                body         TEXT    NOT NULL,
-                sent_at      TEXT    NOT NULL DEFAULT (datetime('now')),
-                read         INTEGER NOT NULL DEFAULT 0
-            );
-        """)
-        db.commit()
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id            SERIAL PRIMARY KEY,
+                        username      TEXT   UNIQUE NOT NULL,
+                        email         TEXT   UNIQUE NOT NULL,
+                        display_name  TEXT   NOT NULL DEFAULT '',
+                        avatar_color  TEXT   NOT NULL DEFAULT '#ff8c42',
+                        password_hash TEXT   NOT NULL,
+                        salt          TEXT   NOT NULL,
+                        created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+                        last_seen     TIMESTAMP
+                    );
+                    CREATE TABLE IF NOT EXISTS messages (
+                        id            SERIAL PRIMARY KEY,
+                        sender_id     INTEGER NOT NULL REFERENCES users(id),
+                        recipient_id  INTEGER,
+                        room          TEXT    NOT NULL DEFAULT 'global',
+                        body          TEXT    NOT NULL,
+                        sent_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+                        read          BOOLEAN NOT NULL DEFAULT FALSE
+                    );
+                """)
+            conn.commit()
+        print("[DB] PostgreSQL initialized OK")
+    except Exception as e:
+        print(f"[DB] init_db failed: {e}")
 
 init_db()
 
@@ -103,30 +108,33 @@ init_db()
 #  AUTH HELPERS
 # ═══════════════════════════════════════════════════════════════════
 def hash_password(password, salt):
-    return hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 260000).hex()
+    return hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100_000).hex()
 
 def make_salt():
     return secrets.token_hex(32)
 
 def create_user(username, email, display_name, password):
-    salt  = make_salt()
+    salt   = make_salt()
     pwhash = hash_password(password, salt)
     colors = ['#ff8c42','#4488ff','#22dd88','#ff4466','#aa44ff','#ffcc00','#00ccaa','#ff6688']
-    color = secrets.choice(colors)
-    with get_db() as db:
-        db.execute(
-            "INSERT INTO users (username,email,display_name,avatar_color,password_hash,salt) "
-            "VALUES (?,?,?,?,?,?)",
-            (username.lower(), email.lower(), display_name or username, color, pwhash, salt)
-        )
-        db.commit()
+    color  = secrets.choice(colors)
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO users (username,email,display_name,avatar_color,password_hash,salt) "
+                "VALUES (%s,%s,%s,%s,%s,%s)",
+                (username.lower(), email.lower(), display_name or username, color, pwhash, salt)
+            )
+        conn.commit()
 
 def verify_user(ident, password):
-    with get_db() as db:
-        row = db.execute(
-            "SELECT * FROM users WHERE username=? OR email=?",
-            (ident.lower(), ident.lower())
-        ).fetchone()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM users WHERE username=%s OR email=%s",
+                (ident.lower(), ident.lower())
+            )
+            row = cur.fetchone()
     if not row:
         return None
     if secrets.compare_digest(hash_password(password, row['salt']), row['password_hash']):
@@ -134,35 +142,45 @@ def verify_user(ident, password):
     return None
 
 def get_user_by_id(uid):
-    with get_db() as db:
-        row = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM users WHERE id=%s", (uid,))
+            row = cur.fetchone()
     return dict(row) if row else None
 
 def get_all_users_except(uid):
-    with get_db() as db:
-        rows = db.execute(
-            "SELECT id,username,display_name,avatar_color,last_seen "
-            "FROM users WHERE id!=? ORDER BY display_name",
-            (uid,)
-        ).fetchall()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT id,username,display_name,avatar_color,last_seen "
+                "FROM users WHERE id!=%s ORDER BY display_name",
+                (uid,)
+            )
+            rows = cur.fetchall()
     return [dict(r) for r in rows]
 
 def update_last_seen(uid):
-    with get_db() as db:
-        db.execute("UPDATE users SET last_seen=datetime('now') WHERE id=?", (uid,))
-        db.commit()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET last_seen=NOW() WHERE id=%s", (uid,))
+        conn.commit()
 
 def unread_count(uid):
-    with get_db() as db:
-        row = db.execute(
-            "SELECT COUNT(*) as cnt FROM messages WHERE recipient_id=? AND read=0", (uid,)
-        ).fetchone()
-    return row['cnt'] if row else 0
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM messages WHERE recipient_id=%s AND read=FALSE", (uid,)
+            )
+            row = cur.fetchone()
+    return row[0] if row else 0
 
 def mark_dm_read(room, uid):
-    with get_db() as db:
-        db.execute("UPDATE messages SET read=1 WHERE room=? AND recipient_id=?", (room, uid))
-        db.commit()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE messages SET read=TRUE WHERE room=%s AND recipient_id=%s", (room, uid)
+            )
+        conn.commit()
 
 def login_required(f):
     from functools import wraps
@@ -176,7 +194,7 @@ def login_required(f):
 # ═══════════════════════════════════════════════════════════════════
 #  SERVER-SENT EVENTS
 # ═══════════════════════════════════════════════════════════════════
-_sse_clients = {}   # uid -> [Queue, ...]
+_sse_clients = {}
 _sse_lock    = threading.Lock()
 
 def sse_subscribe(uid):
@@ -211,25 +229,29 @@ def sse_broadcast(data, exclude_id=None):
 #  MESSAGING HELPERS
 # ═══════════════════════════════════════════════════════════════════
 def save_message(sender_id, body, room='global', recipient_id=None):
-    with get_db() as db:
-        cur = db.execute(
-            "INSERT INTO messages (sender_id,recipient_id,room,body) VALUES (?,?,?,?)",
-            (sender_id, recipient_id, room, body)
-        )
-        msg_id = cur.lastrowid
-        db.commit()
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO messages (sender_id,recipient_id,room,body) VALUES (%s,%s,%s,%s) RETURNING id",
+                (sender_id, recipient_id, room, body)
+            )
+            msg_id = cur.fetchone()[0]
+        conn.commit()
     return msg_id
 
 def get_room_messages(room='global', limit=80):
-    with get_db() as db:
-        rows = db.execute("""
-            SELECT m.id, m.body, m.sent_at, m.room,
-                   u.username, u.display_name, u.avatar_color
-            FROM messages m
-            JOIN users u ON u.id = m.sender_id
-            WHERE m.room=?
-            ORDER BY m.sent_at DESC LIMIT ?
-        """, (room, limit)).fetchall()
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT m.id, m.body,
+                       TO_CHAR(m.sent_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS sent_at,
+                       m.room, u.username, u.display_name, u.avatar_color
+                FROM messages m
+                JOIN users u ON u.id = m.sender_id
+                WHERE m.room=%s
+                ORDER BY m.sent_at DESC LIMIT %s
+            """, (room, limit))
+            rows = cur.fetchall()
     return [dict(r) for r in reversed(rows)]
 
 def get_dm_room(a, b):
@@ -327,14 +349,10 @@ def get_youtube_subscriptions(creds):
 
 def get_instagram_followers(username):
     try:
-        signal.signal(signal.SIGALRM, lambda s,f: (_ for _ in ()).throw(Exception('timeout')))
-        signal.alarm(5)
         L = instaloader.Instaloader()
         p = instaloader.Profile.from_username(L.context, username)
-        signal.alarm(0)
         return {'username':username,'followers':p.followers,'following':p.followees,'posts':p.mediacount}
     except Exception as e:
-        signal.alarm(0)
         return {'error':str(e)}
 
 def get_weather(city='Charlotte'):
@@ -402,8 +420,6 @@ def get_youtube_videos(channel_ids):
 
 def get_instagram_posts(username):
     try:
-        signal.signal(signal.SIGALRM, lambda s,f: (_ for _ in ()).throw(Exception('timeout')))
-        signal.alarm(5)
         L = instaloader.Instaloader()
         profile = instaloader.Profile.from_username(L.context, username)
         posts = []
@@ -414,11 +430,8 @@ def get_instagram_posts(username):
                           'url':f"https://www.instagram.com/p/{post.shortcode}/",
                           'published':post.date_utc.isoformat(),
                           'time_ago':get_time_ago(post.date_utc.isoformat())})
-        signal.alarm(0)
         return posts
-    except:
-        signal.alarm(0)
-        return []
+    except: return []
 
 def get_unified_feed(channel_ids, username, subreddits=['popular','news','technology']):
     posts = (get_youtube_videos(channel_ids)+get_instagram_posts(username)
@@ -528,14 +541,20 @@ def register():
             try:
                 create_user(username, email, display_name or username, pw)
                 user = verify_user(username, pw)
-                session['user_id']      = user['id']
-                session['username']     = user['username']
-                session['display_name'] = user['display_name']
-                session['avatar_color'] = user['avatar_color']
-                update_last_seen(user['id'])
-                return redirect(url_for('dashboard'))
-            except sqlite3.IntegrityError:
+                if user:
+                    session['user_id']      = user['id']
+                    session['username']     = user['username']
+                    session['display_name'] = user['display_name']
+                    session['avatar_color'] = user['avatar_color']
+                    update_last_seen(user['id'])
+                    return redirect(url_for('dashboard'))
+                else:
+                    error = 'Account created but login failed — please try signing in.'
+            except psycopg2.errors.UniqueViolation:
                 error = 'That username or email is already taken.'
+            except Exception as e:
+                print(f"[register] error: {e}")
+                error = f'Registration failed: {str(e)}'
     return render_template('register.html', error=error)
 
 @app.route('/logout')
@@ -682,45 +701,6 @@ def dashboard():
         all_users    = get_all_users_except(uid),
         dm_unread    = unread_count(uid),
     )
-# ── MARKET DATA PROXY ROUTES ──
-@app.route('/api/stock/<ticker>')
-@login_required
-def api_stock(ticker):
-    ticker = ticker.upper().strip()
-    try:
-        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d'
-        resp = requests.get(url, headers={'User-Agent':'Mozilla/5.0'}, timeout=6)
-        data = resp.json()
-        meta  = data['chart']['result'][0]['meta']
-        price = meta['regularMarketPrice']
-        prev  = meta.get('chartPreviousClose') or meta.get('previousClose') or price
-        chg   = price - prev
-        pct   = (chg / prev) * 100 if prev else 0
-        return jsonify({'ok':True,'ticker':ticker,'price':round(price,2),
-                        'changePct':round(pct,2),'name':meta.get('longName') or ticker})
-    except Exception as e:
-        return jsonify({'ok':False,'ticker':ticker,'error':str(e)})
 
-@app.route('/api/crypto/<symbol>')
-@login_required
-def api_crypto(symbol):
-    COINS = {'BTC':'bitcoin','ETH':'ethereum','SOL':'solana','BNB':'binancecoin',
-             'XRP':'ripple','ADA':'cardano','DOGE':'dogecoin','AVAX':'avalanche-2',
-             'DOT':'polkadot','MATIC':'matic-network','LINK':'chainlink','LTC':'litecoin',
-             'UNI':'uniswap','ATOM':'cosmos','TRX':'tron','SHIB':'shiba-inu',
-             'TON':'the-open-network','OP':'optimism','ARB':'arbitrum','PEPE':'pepe',
-             'NEAR':'near','APT':'aptos','SUI':'sui','INJ':'injective-protocol'}
-    sym = symbol.upper().strip()
-    coin_id = COINS.get(sym, sym.lower())
-    try:
-        url  = f'https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true'
-        data = requests.get(url, timeout=6).json()
-        if coin_id not in data:
-            return jsonify({'ok':False,'ticker':sym,'error':'Symbol not found'})
-        price = data[coin_id]['usd']
-        pct   = data[coin_id].get('usd_24h_change', 0) or 0
-        return jsonify({'ok':True,'ticker':sym,'price':price,'changePct':round(pct,2),'name':sym})
-    except Exception as e:
-        return jsonify({'ok':False,'ticker':sym,'error':str(e)})
 if __name__ == '__main__':
     app.run(debug=True, port=5002, threaded=True)
