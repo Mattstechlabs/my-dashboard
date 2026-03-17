@@ -1016,31 +1016,6 @@
             text-decoration: none; margin-left: 6px;
         }
         .dash-logout-link:hover { color: #ff4400; }
-        /* STOCKS & CRYPTO WIDGETS */
-        .market-box { background:var(--bg-card); border:2px solid var(--border-card); box-shadow:var(--shadow-card); border-radius:30px; padding:30px; transition:var(--transition),transform 0.3s; }
-        .market-box:hover { transform:translateY(-5px); }
-        .market-box h2 { color:var(--text-heading); font-size:1.4em; margin:0 0 18px 0; display:flex; align-items:center; justify-content:space-between; transition:color 0.35s; }
-        .market-search-row { display:flex; gap:10px; margin-bottom:16px; }
-        .market-input { flex:1; padding:10px 16px; border-radius:12px; border:2px solid var(--border-input); background:var(--bg-input); color:var(--text-primary); font-size:0.95em; outline:none; font-family:inherit; transition:border-color 0.2s; }
-        .market-input:focus { border-color:var(--accent); }
-        .market-input::placeholder { color:var(--text-muted); }
-        .market-add-btn { padding:10px 20px; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:0.9em; font-weight:bold; cursor:pointer; font-family:inherit; transition:opacity 0.15s,transform 0.15s; }
-        .market-add-btn:hover { opacity:0.85; transform:translateY(-1px); }
-        .market-refresh { background:none; border:1px solid var(--border-card); color:var(--text-muted); border-radius:8px; font-size:0.68em; padding:4px 10px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
-        .market-refresh:hover { border-color:var(--accent); color:var(--accent); }
-        .market-list { display:flex; flex-direction:column; gap:9px; min-height:60px; }
-        .market-item { display:flex; align-items:center; gap:10px; padding:11px 14px; background:var(--bg-inset); border-radius:14px; border:1px solid var(--border-card); transition:background 0.2s; }
-        .market-item:hover { background:var(--bg-input); }
-        .market-ticker { font-weight:700; font-size:0.95em; color:var(--text-heading); min-width:58px; }
-        .market-name   { flex:1; font-size:0.8em; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .market-price  { font-weight:700; font-size:0.95em; color:var(--text-primary); min-width:78px; text-align:right; }
-        .market-change { font-size:0.82em; font-weight:600; min-width:68px; text-align:center; padding:3px 8px; border-radius:8px; }
-        .market-change.up   { color:#22c55e; background:rgba(34,197,94,0.12); }
-        .market-change.down { color:#ef4444; background:rgba(239,68,68,0.12); }
-        .market-remove { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1em; padding:2px 5px; border-radius:6px; transition:color 0.15s,background 0.15s; }
-        .market-remove:hover { color:#ef4444; background:rgba(239,68,68,0.1); }
-        .market-empty { color:var(--text-muted); font-size:0.88em; text-align:center; padding:22px 0; }
-        .market-err   { color:#ef4444; font-size:0.82em; }
     </style>
 <body>
 
@@ -1099,7 +1074,7 @@
                 <div class="chat-user-row" id="user-row-{{ u.id }}"
                      onclick="openDM({{ u.id }}, '{{ u.display_name }}', '{{ u.avatar_color }}', '{{ u.username }}')">
                     <div class="chat-avatar" style="background:{{ u.avatar_color }};">
-                        {{ u.display_name[0].upper() }}
+                        {{ (u.display_name or u.username or '?')[0].upper() }}
                     </div>
                     <div class="chat-user-info">
                         <div class="chat-user-name">{{ u.display_name }}</div>
@@ -1136,7 +1111,7 @@
         <div style="display:flex;align-items:center;gap:20px;">
             <div class="dash-user-greeting">
                 <div class="dash-user-avatar" style="background:{{ current_user.avatar_color }};">
-                    {{ current_user.display_name[0].upper() }}
+                    {{ (current_user.display_name or current_user.username or '?')[0].upper() }}
                 </div>
                 <div>
                     <div class="dash-user-name">{{ current_user.display_name }}</div>
@@ -1365,25 +1340,7 @@
             </div>
 
         </div>
-<!-- STOCKS & CRYPTO -->
-        <div class="three-column-row" style="grid-template-columns:1fr 1fr;">
-            <div class="market-box">
-                <h2>📈 Stock Watchlist <button class="market-refresh" onclick="refreshMarket('stock')">↻ Refresh</button></h2>
-                <div class="market-search-row">
-                    <input class="market-input" id="stock-input" type="text" placeholder="Ticker — e.g. AAPL, TSLA" onkeydown="if(event.key==='Enter')addMarketItem('stock')">
-                    <button class="market-add-btn" onclick="addMarketItem('stock')">+ Add</button>
-                </div>
-                <div class="market-list" id="stock-list"><div class="market-empty">Add a ticker above to start watching.</div></div>
-            </div>
-            <div class="market-box">
-                <h2>🪙 Crypto Watchlist <button class="market-refresh" onclick="refreshMarket('crypto')">↻ Refresh</button></h2>
-                <div class="market-search-row">
-                    <input class="market-input" id="crypto-input" type="text" placeholder="Symbol — e.g. BTC, ETH, SOL" onkeydown="if(event.key==='Enter')addMarketItem('crypto')">
-                    <button class="market-add-btn" onclick="addMarketItem('crypto')">+ Add</button>
-                </div>
-                <div class="market-list" id="crypto-list"><div class="market-empty">Add a coin above to start watching.</div></div>
-            </div>
-        </div>
+
         <!-- ══ GAMES ARCADE ══ -->
         <div class="arcade-section">
             <div class="arcade-header">
@@ -1409,25 +1366,6 @@
                                 <span class="game-tag">1P</span>
                             </div>
                             <button class="game-card-play-btn">▶ PLAY NOW</button>
-                        </div>
-                    </div>
-
-                    <!-- XENOPET -->
-                    <div class="game-card" onclick="openGame('xenopet')">
-                        <div class="game-card-thumb" style="background: linear-gradient(135deg,#050510,#0b0b1f,#060a1e);">
-                            <canvas id="xenopet-preview" width="240" height="140"></canvas>
-                            <div class="game-card-thumb-overlay"></div>
-                            <span class="game-card-badge" style="background:linear-gradient(135deg,#00f5d4,#b06aff);color:#000;">LIVE</span>
-                        </div>
-                        <div class="game-card-info">
-                            <div class="game-card-title" style="color:#00f5d4;">XENOPET</div>
-                            <div class="game-card-desc">Bond with an alien companion. Feed, bathe, play — or watch it die.</div>
-                            <div class="game-card-tags">
-                                <span class="game-tag" style="color:#00f5d4;border-color:rgba(0,245,212,0.3);">Tamagotchi</span>
-                                <span class="game-tag" style="color:#00f5d4;border-color:rgba(0,245,212,0.3);">Sim</span>
-                                <span class="game-tag" style="color:#00f5d4;border-color:rgba(0,245,212,0.3);">Persistent</span>
-                            </div>
-                            <button class="game-card-play-btn" style="background:linear-gradient(135deg,#00c4aa,#b06aff);">▶ PLAY NOW</button>
                         </div>
                     </div>
 
@@ -1720,10 +1658,6 @@
             ashfall: {
                 title: '🔥 ASHFALL',
                 src: 'games/ashfall/index.html'  // path relative to dashboard
-            },
-            xenopet: {
-                title: '👾 XENOPET',
-                src: 'games/xenopet/index.html'
             }
         };
 
@@ -1898,135 +1832,6 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('ASHFALL', W / 2, 14);
 
-                requestAnimationFrame(drawFrame);
-            }
-            drawFrame();
-        })();
-
-        // ── Animated pixel-art preview canvas for XENOPET ──
-        (function() {
-            const canvas = document.getElementById('xenopet-preview');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const W = 240, H = 140;
-            canvas.width = W; canvas.height = H;
-            ctx.imageSmoothingEnabled = false;
-
-            // Mini alien sprite — 16x16 pixel grid, GLORP-style
-            const ALIEN_COLORS = ['#3effa0','#1acc70','#a0ffd0','#ff6b9d','#000010','#ffe14a'];
-            const ALIEN_FRAMES = [
-                ["0000011110000000","0000111111100000","0001111111110000","0011111111111000",
-                 "0111111111111100","0114111114111100","0115511115511100","0111111111111100",
-                 "0011111111111000","0001111221111000","0000122222210000","0000012222100000",
-                 "0000001111000000","0000001001000000","0000001001000000","0000000000000000"],
-                ["0000011110000000","0000111111100000","0001111111110000","0011111111111000",
-                 "0111111111111100","0114111114111100","0115511115511100","0111111111111100",
-                 "0011111111111000","0001111221111000","0000122222210000","0000012222100000",
-                 "0000001111000000","0000000101000000","0000001010000000","0000000000000000"]
-            ];
-
-            function drawAlien(x, y, scale, frameIdx) {
-                const grid = ALIEN_FRAMES[frameIdx % 2];
-                for (let r = 0; r < 16; r++) {
-                    for (let c = 0; c < 16; c++) {
-                        const ch = grid[r][c];
-                        if (ch === '0') continue;
-                        ctx.fillStyle = ALIEN_COLORS[parseInt(ch) - 1];
-                        ctx.fillRect(x + c * scale, y + r * scale, scale, scale);
-                    }
-                }
-            }
-
-            // Floating star positions
-            const stars = Array.from({length: 18}, (_, i) => ({
-                x: Math.random() * W,
-                y: Math.random() * H * 0.72,
-                size: Math.random() > 0.7 ? 2 : 1,
-                twinkleOffset: Math.random() * Math.PI * 2
-            }));
-
-            // Orbiting species dots
-            const orbiters = [
-                { angle: 0,        r: 52, color: '#3effa0', speed: 0.018, size: 5 },
-                { angle: Math.PI,  r: 52, color: '#3ac8ff', speed: 0.018, size: 5 },
-                { angle: Math.PI/2,r: 38, color: '#ff4a7a', speed: 0.026, size: 4 },
-                { angle: 3*Math.PI/2, r: 38, color: '#b07aff', speed: 0.026, size: 4 },
-                { angle: Math.PI/4, r: 65, color: '#ffe14a', speed: 0.012, size: 4 }
-            ];
-
-            let frame = 0;
-
-            function drawFrame() {
-                ctx.clearRect(0, 0, W, H);
-
-                // Space background
-                const bg = ctx.createLinearGradient(0, 0, 0, H);
-                bg.addColorStop(0, '#020208');
-                bg.addColorStop(1, '#06041a');
-                ctx.fillStyle = bg;
-                ctx.fillRect(0, 0, W, H);
-
-                // Twinkling stars
-                stars.forEach(s => {
-                    const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(frame * 0.03 + s.twinkleOffset));
-                    ctx.globalAlpha = twinkle;
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
-                });
-                ctx.globalAlpha = 1;
-
-                // Ground
-                ctx.fillStyle = '#0a1208';
-                ctx.fillRect(0, H * 0.78, W, H * 0.22);
-                ctx.fillStyle = '#111f0e';
-                ctx.fillRect(0, H * 0.76, W, H * 0.04);
-
-                // Alien — centered, gentle bob
-                const scale = 5;
-                const aw = 16 * scale, ah = 16 * scale;
-                const ax = Math.floor((W - aw) / 2);
-                const ay = Math.floor(H * 0.76 - ah - 2 + Math.sin(frame * 0.05) * 3);
-
-                // Shadow
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.beginPath();
-                ctx.ellipse(W / 2, H * 0.77, aw * 0.35, 5, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Species glow
-                const glow = ctx.createRadialGradient(W/2, H*0.77, 0, W/2, H*0.77, 70);
-                glow.addColorStop(0, 'rgba(62,255,160,0.18)');
-                glow.addColorStop(1, 'transparent');
-                ctx.fillStyle = glow;
-                ctx.fillRect(0, 0, W, H);
-
-                drawAlien(ax, ay, scale, Math.floor(frame / 10));
-
-                // Orbiting species dots
-                orbiters.forEach(o => {
-                    o.angle += o.speed;
-                    const ox = W / 2 + Math.cos(o.angle) * o.r;
-                    const oy = H * 0.45 + Math.sin(o.angle) * o.r * 0.45;
-                    ctx.save();
-                    ctx.shadowBlur = 8;
-                    ctx.shadowColor = o.color;
-                    ctx.fillStyle = o.color;
-                    ctx.beginPath();
-                    ctx.arc(ox, oy, o.size, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                });
-
-                // Title watermark
-                ctx.globalAlpha = 0.55;
-                ctx.fillStyle = '#00f5d4';
-                ctx.font = '7px "Press Start 2P", monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText('XENOPET', W / 2, 13);
-                ctx.globalAlpha = 1;
-                ctx.textAlign = 'left';
-
-                frame++;
                 requestAnimationFrame(drawFrame);
             }
             drawFrame();
@@ -2417,60 +2222,6 @@
             applyTheme(isDark ? 'light' : 'dark', true);
         }
     </script>
-<script>
-    (function(){
-        const state = {
-            stock:  JSON.parse(localStorage.getItem('wl_stock')  || '["AAPL","TSLA","NVDA"]'),
-            crypto: JSON.parse(localStorage.getItem('wl_crypto') || '["BTC","ETH","SOL"]'),
-        };
-        function save(type){ localStorage.setItem('wl_'+type, JSON.stringify(state[type])); }
 
-        async function fetchStock(t){
-            try{
-                const r=await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?interval=1d&range=1d`);
-                const d=await r.json(); const m=d.chart.result[0].meta;
-                const price=m.regularMarketPrice, prev=m.chartPreviousClose||m.previousClose;
-                const chg=price-prev, pct=(chg/prev)*100;
-                return {price:'$'+price.toFixed(2), pct:(pct>=0?'+':'')+pct.toFixed(2)+'%', name:m.longName||m.shortName||t, dir:chg>=0?'up':'down'};
-            }catch(e){return null;}
-        }
-        const COINS={BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin',XRP:'ripple',ADA:'cardano',DOGE:'dogecoin',AVAX:'avalanche-2',DOT:'polkadot',MATIC:'matic-network',LINK:'chainlink',LTC:'litecoin',SHIB:'shiba-inu',TON:'the-open-network',PEPE:'pepe'};
-        async function fetchCrypto(t){
-            const id=COINS[t.toUpperCase()]||t.toLowerCase();
-            try{
-                const r=await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`);
-                const d=await r.json(); if(!d[id])return null;
-                const p=d[id].usd, pct=d[id].usd_24h_change||0;
-                return {price:'$'+(p>=1?p.toFixed(2):p.toPrecision(4)), pct:(pct>=0?'+':'')+pct.toFixed(2)+'%', name:t.toUpperCase(), dir:pct>=0?'up':'down'};
-            }catch(e){return null;}
-        }
-        function row(type,t,data){
-            const rm=`<button class="market-remove" onclick="removeMarketItem('${type}','${t}')" title="Remove">✕</button>`;
-            if(!data)return `<div class="market-item" id="mi-${type}-${t}"><span class="market-ticker">${t}</span><span class="market-name market-err">Could not load — check symbol</span>${rm}</div>`;
-            return `<div class="market-item" id="mi-${type}-${t}"><span class="market-ticker">${t}</span><span class="market-name">${data.name!==t?data.name:''}</span><span class="market-price">${data.price}</span><span class="market-change ${data.dir}">${data.pct}</span>${rm}</div>`;
-        }
-        async function render(type){
-            const el=document.getElementById(type+'-list'); if(!el)return;
-            if(!state[type].length){el.innerHTML=`<div class="market-empty">No ${type==='stock'?'stocks':'coins'} added yet.</div>`;return;}
-            el.innerHTML=state[type].map(t=>`<div class="market-item" id="mi-${type}-${t}"><span class="market-ticker">${t}</span><span style="color:var(--text-muted);font-size:0.82em;font-style:italic">Loading…</span></div>`).join('');
-            for(const t of state[type]){
-                const data=type==='stock'?await fetchStock(t):await fetchCrypto(t);
-                const item=document.getElementById(`mi-${type}-${t}`);
-                if(item)item.outerHTML=row(type,t,data);
-            }
-        }
-        window.addMarketItem=async function(type){
-            const inp=document.getElementById(type+'-input');
-            const val=inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
-            if(!val)return;
-            if(state[type].includes(val)){inp.value='';return;}
-            state[type].push(val);save(type);inp.value='';await render(type);
-        };
-        window.removeMarketItem=function(type,t){state[type]=state[type].filter(x=>x!==t);save(type);render(type);};
-        window.refreshMarket=function(type){render(type);};
-        render('stock'); render('crypto');
-        setInterval(()=>{render('stock');render('crypto');},5*60*1000);
-    })();
-    </script>
 </body>
-</html>x
+</html>
