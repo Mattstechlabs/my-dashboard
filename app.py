@@ -27,7 +27,7 @@ import plaid
 
 # ─── GOOGLE ──────────────────────────────────────────────────────
 from google.oauth2.credentials         import Credentials
-from google_auth_oauthlib.flow         import InstalledAppFlow
+from google_auth_oauthlib.flow         import Flow
 from googleapiclient.discovery         import build
 
 # ─────────────────────────────────────────────────────────────────
@@ -621,6 +621,49 @@ def msg_users():
             ).fetchone()
         u['unread'] = row['cnt'] if row else 0
     return jsonify(users)
+
+# ═══════════════════════════════════════════════════════════════════
+#  GOOGLE OAUTH ROUTES
+# ═══════════════════════════════════════════════════════════════════
+@app.route('/connect_gmail')
+@login_required
+def connect_gmail():
+    if not os.path.exists(GOOGLE_CREDS_FILE):
+        return "Missing credentials.json — add your Google OAuth credentials file to the project.", 400
+    flow = Flow.from_client_secrets_file(
+        GOOGLE_CREDS_FILE, scopes=SCOPES,
+        redirect_uri=url_for('google_callback', _external=True)
+    )
+    auth_url, state = flow.authorization_url(
+        access_type='offline', include_granted_scopes='true', prompt='consent'
+    )
+    session['google_oauth_state'] = state
+    return redirect(auth_url)
+
+@app.route('/google_callback')
+@login_required
+def google_callback():
+    if not os.path.exists(GOOGLE_CREDS_FILE):
+        return redirect(url_for('dashboard'))
+    flow = Flow.from_client_secrets_file(
+        GOOGLE_CREDS_FILE, scopes=SCOPES,
+        redirect_uri=url_for('google_callback', _external=True),
+        state=session.get('google_oauth_state')
+    )
+    try:
+        flow.fetch_token(authorization_response=request.url)
+        creds = flow.credentials
+        session['google_creds'] = creds.to_json()
+    except Exception as e:
+        print(f"Google OAuth error: {e}")
+    return redirect(url_for('dashboard'))
+
+@app.route('/disconnect_google')
+@login_required
+def disconnect_google():
+    session.pop('google_creds', None)
+    session.pop('google_oauth_state', None)
+    return redirect(url_for('dashboard'))
 
 # ═══════════════════════════════════════════════════════════════════
 #  REDDIT ROUTES
