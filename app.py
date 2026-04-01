@@ -628,32 +628,59 @@ def msg_users():
 @app.route('/connect_gmail')
 @login_required
 def connect_gmail():
-    if not os.path.exists(GOOGLE_CREDS_FILE):
-        return "Missing credentials.json — add your Google OAuth credentials file to the project.", 400
-    flow = Flow.from_client_secrets_file(
-        GOOGLE_CREDS_FILE, scopes=SCOPES,
-        redirect_uri=url_for('google_callback', _external=True)
-    )
-    auth_url, state = flow.authorization_url(
-        access_type='offline', include_granted_scopes='true', prompt='consent'
-    )
-    session['google_oauth_state'] = state
-    return redirect(auth_url)
+    google_creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+    if not google_creds_json and not os.path.exists(GOOGLE_CREDS_FILE):
+        return "Google credentials not configured.", 400
+    try:
+        import tempfile
+        if google_creds_json:
+            tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            tmp.write(google_creds_json)
+            tmp.flush()
+            creds_file = tmp.name
+            tmp.close()
+        else:
+            creds_file = GOOGLE_CREDS_FILE
+        flow = Flow.from_client_secrets_file(
+            creds_file, scopes=SCOPES,
+            redirect_uri=url_for('google_callback', _external=True)
+        )
+        auth_url, state = flow.authorization_url(
+            access_type='offline', include_granted_scopes='true', prompt='consent'
+        )
+        session['google_oauth_state'] = state
+        if google_creds_json:
+            os.unlink(creds_file)
+        return redirect(auth_url)
+    except Exception as e:
+        return f"Google OAuth setup error: {e}", 500
 
 @app.route('/google_callback')
 @login_required
 def google_callback():
-    if not os.path.exists(GOOGLE_CREDS_FILE):
+    google_creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+    if not google_creds_json and not os.path.exists(GOOGLE_CREDS_FILE):
         return redirect(url_for('dashboard'))
-    flow = Flow.from_client_secrets_file(
-        GOOGLE_CREDS_FILE, scopes=SCOPES,
-        redirect_uri=url_for('google_callback', _external=True),
-        state=session.get('google_oauth_state')
-    )
     try:
+        import tempfile
+        if google_creds_json:
+            tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            tmp.write(google_creds_json)
+            tmp.flush()
+            creds_file = tmp.name
+            tmp.close()
+        else:
+            creds_file = GOOGLE_CREDS_FILE
+        flow = Flow.from_client_secrets_file(
+            creds_file, scopes=SCOPES,
+            redirect_uri=url_for('google_callback', _external=True),
+            state=session.get('google_oauth_state')
+        )
         flow.fetch_token(authorization_response=request.url)
         creds = flow.credentials
         session['google_creds'] = creds.to_json()
+        if google_creds_json:
+            os.unlink(creds_file)
     except Exception as e:
         print(f"Google OAuth error: {e}")
     return redirect(url_for('dashboard'))
